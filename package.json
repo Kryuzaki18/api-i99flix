@@ -1,4 +1,13 @@
 {
+  "name": "api-movie",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev":   "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.2.0",
