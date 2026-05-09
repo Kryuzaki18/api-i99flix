@@ -14,7 +14,7 @@ import { Type } from "@sinclair/typebox";
 import type { FastifyInstance } from "fastify";
 
 const schema = Type.Object({
-  PORT:          Type.Number({ default: 5555 }),
+  PORT:          Type.Number({ default: 4321 }),
   JWT_SECRET:    Type.String({ minLength: 16 }),
   COOKIE_SECRET: Type.String({ minLength: 16 }),
   CLIENT_ORIGIN: Type.String({ default: "http://localhost:1234" }),

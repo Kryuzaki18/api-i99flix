@@ -66,7 +66,6 @@ const SigninSchema = {
       pattern: EMAIL_REGEX.source,
     }),
     password: Type.String({ minLength: 7 }),
-    useTestnet: Type.Boolean({ default: true }),
   }),
   response: {
     200: Type.Object({ message: Type.String() }),
@@ -83,54 +82,59 @@ const SignoutSchema = {
   },
 };
 
-
 const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
-  fastify.post(ROUTES.SIGNUP, { schema: SignupSchema }, async (request, reply) => {
-    const { name, email, password } = request.body as {
-      name:     string;
-      email:    string;
-      password: string;
-    };
+  fastify.post(
+    ROUTES.SIGNUP,
+    { schema: SignupSchema },
+    async (request, reply) => {
+      const { name, email, password } = request.body as {
+        name: string;
+        email: string;
+        password: string;
+      };
 
-    if (!EMAIL_REGEX.test(email)) {
-      return reply.code(422).send({ error: "Invalid email address format" });
-    }
+      if (!EMAIL_REGEX.test(email)) {
+        return reply.code(422).send({ error: "Invalid email address format" });
+      }
 
-    const existingByEmail = await User.findOne({
-      email: email.toLowerCase().trim(),
-    }).lean();
+      const existingByEmail = await User.findOne({
+        email: email.toLowerCase().trim(),
+      }).lean();
 
-    if (existingByEmail) {
-      return reply
-        .code(409)
-        .send({ error: "Email address is already taken", field: "email" });
-    }
+      if (existingByEmail) {
+        return reply
+          .code(409)
+          .send({ error: "Email address is already taken", field: "email" });
+      }
 
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    try {
-      await User.create({
-        name:     name.trim(),
-        email:    email.toLowerCase().trim(),
-        password: hashedPassword,
-      });
+      try {
+        await User.create({
+          name: name.trim(),
+          email: email.toLowerCase().trim(),
+          password: hashedPassword,
+        });
 
-      return reply.code(201).send({ message: "Account created successfully" });
-    } catch (error: any) {
-      if (error.code === 11000) {
-        const field = Object.keys(error.keyPattern ?? {})[0] ?? "field";
-        return reply.code(409).send({
-          error: `${field.charAt(0).toUpperCase() + field.slice(1)} is already taken`,
-          field,
+        return reply
+          .code(201)
+          .send({ message: "Account created successfully" });
+      } catch (error: any) {
+        if (error.code === 11000) {
+          const field = Object.keys(error.keyPattern ?? {})[0] ?? "field";
+          return reply.code(409).send({
+            error: `${field.charAt(0).toUpperCase() + field.slice(1)} is already taken`,
+            field,
+          });
+        }
+        request.log.error(error);
+        return reply.code(400).send({
+          error: error.message || "Failed to create account",
+          details: error.errors,
         });
       }
-      request.log.error(error);
-      return reply.code(400).send({
-        error: error.message || "Failed to create account",
-        details: error.errors,
-      });
-    }
-  });
+    },
+  );
 
   fastify.get(ROUTES.ME, { schema: MeSchema }, async (request, reply) => {
     try {
@@ -165,7 +169,9 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         };
 
         if (!EMAIL_REGEX.test(email)) {
-          return reply.code(401).send({ error: "Invalid email address format" });
+          return reply
+            .code(401)
+            .send({ error: "Invalid email address format" });
         }
 
         const user = await User.findOne({
@@ -176,10 +182,13 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         const dummyHash =
           "$2b$12$invalidhashfortimingattackprevention000000000000000000";
         const passwordToCompare = user?.password ?? dummyHash;
-        const isPasswordValid = await bcrypt.compare(password, passwordToCompare);
+        const isPasswordValid = await bcrypt.compare(
+          password,
+          passwordToCompare,
+        );
 
         if (!user || !isPasswordValid) {
-          return reply.code(401).send({ error: "Invalid email or password" });
+          return reply.code(400).send({ error: "Invalid email or password" });
         }
 
         const token = fastify.jwt.sign(
@@ -197,15 +206,22 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         }
         return reply
           .code(400)
-          .send({ error: error.message || "Failed to sign in", details: error.details });
+          .send({
+            error: error.message || "Failed to sign in",
+            details: error.details,
+          });
       }
     },
   );
 
-  fastify.post(ROUTES.SIGNOUT, { schema: SignoutSchema }, async (_request, reply) => {
-    reply.clearCookie(COOKIE_NAME, { path: "/" });
-    return reply.code(200).send({ message: "Signed out successfully" });
-  });
+  fastify.post(
+    ROUTES.SIGNOUT,
+    { schema: SignoutSchema },
+    async (_request, reply) => {
+      reply.clearCookie(COOKIE_NAME, { path: "/" });
+      return reply.code(200).send({ message: "Signed out successfully" });
+    },
+  );
 };
 
 export default authRoutes;

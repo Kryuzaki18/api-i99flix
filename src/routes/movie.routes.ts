@@ -58,8 +58,6 @@ const PaginatedMoviesResponse = Type.Object({
   totalPages: Type.Number(),
 });
 
-// ── Route schemas ─────────────────────────────────────────────────────────────
-
 const ListMoviesSchema = {
   description: "List movies with optional filters and pagination.",
   tags: ["Movies"],
@@ -132,8 +130,6 @@ const DeleteMovieSchema = {
     500: ErrorBody,
   },
 };
-
-// ── Route handlers ────────────────────────────────────────────────────────────
 
 const movieRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
