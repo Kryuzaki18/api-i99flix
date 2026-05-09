@@ -1,11 +1,13 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUser extends Document {
-  name:      string;
-  email:     string;
-  password:  string;
-  createdAt: Date;
-  updatedAt: Date;
+  name:             string;
+  email:            string;
+  password:         string;
+  resetToken?:      string;
+  resetTokenExpiry?: Date;
+  createdAt:        Date;
+  updatedAt:        Date;
 }
 
 const UserSchema: Schema = new Schema(
@@ -30,6 +32,14 @@ const UserSchema: Schema = new Schema(
       type:      String,
       required:  [true, "Password is required"],
       minlength: [7,   "Password must be at least 7 characters"],
+    },
+    resetToken: {
+      type:    String,
+      default: undefined,
+    },
+    resetTokenExpiry: {
+      type:    Date,
+      default: undefined,
     },
   },
   { timestamps: true },

@@ -19,6 +19,14 @@ const schema = Type.Object({
   COOKIE_SECRET: Type.String({ minLength: 16 }),
   CLIENT_ORIGIN: Type.String({ default: "http://localhost:1234" }),
   MONGODB_URI:   Type.String({ default: "mongodb://localhost:27017/moviedb" }),
+
+  // ── Nodemailer / SMTP ──────────────────────────────────────────────────────
+  SMTP_HOST:     Type.String({ default: "smtp.gmail.com" }),
+  SMTP_PORT:     Type.Number({ default: 587 }),
+  SMTP_SECURE:   Type.Boolean({ default: false }), // true = port 465 (TLS), false = STARTTLS
+  SMTP_USER:     Type.String({ default: "" }),
+  SMTP_PASS:     Type.String({ default: "" }),
+  EMAIL_FROM:    Type.String({ default: "99Flix <noreply@99flix.com>" }),
 });
 
 declare module "fastify" {
@@ -29,6 +37,12 @@ declare module "fastify" {
       COOKIE_SECRET: string;
       CLIENT_ORIGIN: string;
       MONGODB_URI:   string;
+      SMTP_HOST:     string;
+      SMTP_PORT:     number;
+      SMTP_SECURE:   boolean;
+      SMTP_USER:     string;
+      SMTP_PASS:     string;
+      EMAIL_FROM:    string;
     };
   }
 }

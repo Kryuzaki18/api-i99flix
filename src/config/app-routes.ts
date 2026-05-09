@@ -3,10 +3,12 @@ export const ROUTES = {
   HEALTH: "/health",
 
   // Auth
-  SIGNUP:  "/signup",
-  SIGNIN:  "/signin",
-  SIGNOUT: "/signout",
-  ME:      "/me",
+  SIGNUP:          "/signup",
+  SIGNIN:          "/signin",
+  SIGNOUT:         "/signout",
+  ME:              "/me",
+  FORGOT_PASSWORD: "/forgot-password",
+  RESET_PASSWORD:  "/reset-password",
 
   // Movies — CRUD
   MOVIES:      "/movies",       // GET (list) + POST (create)

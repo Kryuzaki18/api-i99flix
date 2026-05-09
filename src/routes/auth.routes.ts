@@ -1,6 +1,7 @@
 import { type FastifyInstance, type FastifyPluginAsync } from "fastify";
 import { Type } from "@sinclair/typebox";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 import { ROUTES } from "../config/app-routes.js";
 import { EMAIL_REGEX } from "../constants/regex.constant.js";
@@ -9,8 +10,10 @@ import {
   COOKIE_NAME,
   SALT_ROUNDS,
   SEVEN_DAYS_SECONDS,
+  RESET_TOKEN_TTL_MS,
 } from "../constants/auth.constant.js";
 import User from "../schemas/users.schema.js";
+import { createEmailService } from "../services/email.service.js";
 
 const cookieOptions = (maxAgeSeconds: number) => ({
   httpOnly: true,
@@ -82,7 +85,44 @@ const SignoutSchema = {
   },
 };
 
+const ForgotPasswordSchema = {
+  description:
+    "Accepts an email address and, if an account exists, stores a short-lived reset token. " +
+    "Always returns 200 to prevent user enumeration.",
+  tags: ["Authentication"],
+  body: Type.Object({
+    email: Type.String({
+      minLength: 10,
+      maxLength: 100,
+      pattern: EMAIL_REGEX.source,
+    }),
+  }),
+  response: {
+    200: Type.Object({ message: Type.String() }),
+    400: ErrorBody,
+  },
+};
+
+const ResetPasswordSchema = {
+  description:
+    "Verifies the reset token and updates the user's password. " +
+    "Token is single-use and expires after 1 hour.",
+  tags: ["Authentication"],
+  body: Type.Object({
+    token:    Type.String({ minLength: 1 }),
+    password: Type.String({ minLength: 7 }),
+  }),
+  response: {
+    200: Type.Object({ message: Type.String() }),
+    400: ErrorBody,
+  },
+};
+
 const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
+  // Instantiate the email service once per plugin registration so the
+  // transporter and templates are shared across all route handlers.
+  const mailer = createEmailService(fastify.config);
+
   fastify.post(
     ROUTES.SIGNUP,
     {
@@ -118,6 +158,11 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           email: email.toLowerCase().trim(),
           password: hashedPassword,
         });
+
+        // Send welcome email — fire-and-forget so a mail failure never
+        // blocks the signup response. Errors are logged for observability.
+        mailer.sendWelcome({ to: email.toLowerCase().trim(), name: name.trim() })
+          .catch((err: Error) => request.log.error({ err, message: err.message }, "Failed to send welcome email"));
 
         return reply
           .code(201)
@@ -223,6 +268,98 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     async (_request, reply) => {
       reply.clearCookie(COOKIE_NAME, { path: "/" });
       return reply.code(200).send({ message: "Signed out successfully" });
+    },
+  );
+
+  // ── Forgot password ────────────────────────────────────────────────────────
+  // Always returns 200 regardless of whether the email exists to prevent
+  // user enumeration. In production, send the token via email; here we
+  // return it in the response body for development convenience.
+  fastify.post(
+    ROUTES.FORGOT_PASSWORD,
+    {
+      schema: ForgotPasswordSchema,
+      config: { rateLimit: { max: 5, timeWindow: "15 minutes" } },
+    },
+    async (request, reply) => {
+      const { email } = request.body as { email: string };
+
+      if (!EMAIL_REGEX.test(email)) {
+        return reply.code(400).send({ error: "Invalid email address format" });
+      }
+
+      const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+      if (user) {
+        const token  = crypto.randomBytes(32).toString("hex");
+        const expiry = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+
+        user.resetToken       = token;
+        user.resetTokenExpiry = expiry;
+        await user.save();
+
+        // Build the reset URL and send the email — fire-and-forget.
+        const resetUrl = `${fastify.config.CLIENT_ORIGIN}/reset-password?token=${token}`;
+
+        mailer.sendPasswordReset({
+          to:       user.email,
+          name:     user.name,
+          resetUrl,
+        }).catch((err: Error) => request.log.error({ err, message: err.message }, "Failed to send password reset email"));
+      }
+
+      // Always return the same message to prevent user enumeration
+      return reply.code(200).send({
+        message:
+          "If an account with that email exists, a password reset link has been sent.",
+      });
+    },
+  );
+
+  // ── Reset password ─────────────────────────────────────────────────────────
+  fastify.post(
+    ROUTES.RESET_PASSWORD,
+    {
+      schema: ResetPasswordSchema,
+      config: { rateLimit: { max: 10, timeWindow: "15 minutes" } },
+    },
+    async (request, reply) => {
+      const { token, password } = request.body as {
+        token:    string;
+        password: string;
+      };
+
+      const user = await User.findOne({
+        resetToken:       token,
+        resetTokenExpiry: { $gt: new Date() },
+      });
+
+      if (!user) {
+        return reply
+          .code(400)
+          .send({ error: "Reset link is invalid or has expired." });
+      }
+
+      user.password         = await bcrypt.hash(password, SALT_ROUNDS);
+      user.resetToken       = undefined;
+      user.resetTokenExpiry = undefined;
+      await user.save();
+
+      // Notify the user that their password was changed — fire-and-forget.
+      const changedAt = new Date().toLocaleString("en-US", {
+        dateStyle: "long",
+        timeStyle: "short",
+        timeZone:  "UTC",
+      }) + " UTC";
+
+      mailer.sendPasswordChanged({
+        to:        user.email,
+        name:      user.name,
+        email:     user.email,
+        changedAt,
+      }).catch((err: Error) => request.log.error({ err, message: err.message }, "Failed to send password-changed email"));
+
+      return reply.code(200).send({ message: "Password updated successfully." });
     },
   );
 };
