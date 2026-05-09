@@ -85,7 +85,10 @@ const SignoutSchema = {
 const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.post(
     ROUTES.SIGNUP,
-    { schema: SignupSchema },
+    {
+      schema: SignupSchema,
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+    },
     async (request, reply) => {
       const { name, email, password } = request.body as {
         name: string;
