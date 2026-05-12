@@ -6,7 +6,16 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "pm2:start-prod": "pm2-runtime start ecosystem.config.cjs --env production",
+    "pm2:start-local": "npm run build && pm2 start ecosystem.config.cjs --env production",
+    "pm2:stop": "pm2 stop api",
+    "pm2:restart": "pm2 restart api",
+    "pm2:reload": "pm2 reload api",
+    "pm2:delete": "pm2 delete api",
+    "pm2:logs": "pm2 logs api",
+    "pm2:status": "pm2 status",
+    "pm2:monit": "pm2 monit"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
