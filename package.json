@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "pm2:start-prod": "pm2-runtime start ecosystem.config.cjs --env production",
     "pm2:start-local": "npm run build && pm2 start ecosystem.config.cjs --env production",
