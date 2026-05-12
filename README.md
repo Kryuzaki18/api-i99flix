@@ -1,6 +1,6 @@
-# 🎬 99Flix API
+# 🎬 i99flix API
 
-REST API for the 99Flix movie streaming platform. Built with **Fastify**, **MongoDB**, and **TypeScript**.
+REST API for the i99flix movie streaming platform. Built with **Fastify**, **MongoDB**, and **TypeScript**.
 
 ---
 

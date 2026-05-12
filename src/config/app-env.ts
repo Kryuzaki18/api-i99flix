@@ -26,7 +26,7 @@ const schema = Type.Object({
   SMTP_SECURE:   Type.Boolean({ default: false }), // true = port 465 (TLS), false = STARTTLS
   SMTP_USER:     Type.String({ default: "" }),
   SMTP_PASS:     Type.String({ default: "" }),
-  EMAIL_FROM:    Type.String({ default: "99Flix <noreply@99flix.com>" }),
+  EMAIL_FROM:    Type.String({ default: "i99flix <noreply@i99flix.com>" }),
 });
 
 declare module "fastify" {

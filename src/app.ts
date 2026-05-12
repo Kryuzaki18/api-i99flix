@@ -53,8 +53,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(fastifySwagger, {
     openapi: {
       info: {
-        title: "99Flix Movie API",
-        description: "REST API for the 99Flix movie streaming platform",
+        title: "i99flix Movie API",
+        description: "REST API for the i99flix movie streaming platform",
         version: "1.0.0",
       },
       components: {

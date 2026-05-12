@@ -1,5 +1,5 @@
 /**
- * Email service — Nodemailer wrapper for 99Flix transactional emails.
+ * Email service — Nodemailer wrapper for i99flix transactional emails.
  *
  * Reads SMTP credentials from the app config and sends HTML emails
  * using pre-built templates stored in src/templates/.
@@ -111,7 +111,7 @@ export function createEmailService(config: EmailConfig): EmailService {
       await transporter.sendMail({
         from:    config.EMAIL_FROM,
         to,
-        subject: "Welcome to 99Flix 🎬 — Your account is ready",
+        subject: "Welcome to i99flix 🎬 — Your account is ready",
         html,
       });
     },
@@ -129,7 +129,7 @@ export function createEmailService(config: EmailConfig): EmailService {
       await transporter.sendMail({
         from:    config.EMAIL_FROM,
         to,
-        subject: "Reset your 99Flix password 🔑",
+        subject: "Reset your i99flix password 🔑",
         html,
       });
     },
@@ -148,7 +148,7 @@ export function createEmailService(config: EmailConfig): EmailService {
       await transporter.sendMail({
         from:    config.EMAIL_FROM,
         to,
-        subject: "Your 99Flix password was changed 🔐",
+        subject: "Your i99flix password was changed 🔐",
         html,
       });
     },
