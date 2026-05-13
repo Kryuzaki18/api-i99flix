@@ -33,6 +33,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     origin: app.config.CLIENT_ORIGIN,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["Set-Cookie"],
     credentials: true,
   });
 

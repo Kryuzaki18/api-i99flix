@@ -17,8 +17,8 @@ import { createEmailService } from "../services/email.service.js";
 
 const cookieOptions = (maxAgeSeconds: number) => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure: true,                // always true — SameSite=None requires Secure
+  sameSite: "none" as const,  // required for cross-origin cookie (different domains)
   path: "/",
   maxAge: maxAgeSeconds,
 });
