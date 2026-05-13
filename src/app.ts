@@ -37,7 +37,6 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   await app.register(fastifyCookie, {
-    secret: app.config.COOKIE_SECRET,
     hook: "onRequest",
     parseOptions: {},
   });
