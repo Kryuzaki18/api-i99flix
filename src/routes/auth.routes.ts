@@ -266,7 +266,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     ROUTES.SIGNOUT,
     { schema: SignoutSchema },
     async (_request, reply) => {
-      reply.clearCookie(COOKIE_NAME, { path: "/" });
+      reply.clearCookie(COOKIE_NAME, cookieOptions(0));
       return reply.code(200).send({ message: "Signed out successfully" });
     },
   );
