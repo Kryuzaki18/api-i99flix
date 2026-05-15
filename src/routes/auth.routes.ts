@@ -17,8 +17,8 @@ import { createEmailService } from "../services/email.service.js";
 
 const cookieOptions = (maxAgeSeconds: number) => ({
   httpOnly: true,
-  secure: true,                // always true — SameSite=None requires Secure
-  sameSite: "none" as const,  // required for cross-origin cookie (different domains)
+  secure:   true,               // HTTPS required — both Vercel and Render use HTTPS
+  sameSite: 'none' as const,   // cross-origin cookie (different domains)
   path: "/",
   maxAge: maxAgeSeconds,
 });

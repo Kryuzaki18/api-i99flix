@@ -30,7 +30,21 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(fastifyRateLimit, { global: false });
 
   await app.register(fastifyCors, {
-    origin: app.config.CLIENT_ORIGIN,
+    origin: (origin, cb) => {
+      // Parse CLIENT_ORIGIN as comma-separated list to support multiple origins
+      // e.g. "http://localhost:1234,https://myapp.netlify.app"
+      const allowed = app.config.CLIENT_ORIGIN
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+
+      // Allow requests with no origin (mobile apps, curl, Postman, same-origin)
+      if (!origin || allowed.includes(origin)) {
+        cb(null, true);
+      } else {
+        cb(new Error(`CORS: origin ${origin} not allowed`), false);
+      }
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     exposedHeaders: ["Set-Cookie"],
