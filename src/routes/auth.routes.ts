@@ -15,13 +15,20 @@ import {
 import User from "../schemas/users.schema.js";
 import { createEmailService } from "../services/email.service.js";
 
-const cookieOptions = (maxAgeSeconds: number) => ({
-  httpOnly: true,
-  secure:   true,               // HTTPS required — both Vercel and Render use HTTPS
-  sameSite: 'none' as const,   // cross-origin cookie (different domains)
-  path: "/",
-  maxAge: maxAgeSeconds,
-});
+const cookieOptions = (maxAgeSeconds: number) => {
+  // On Render (production) both frontend and backend are HTTPS so
+  // SameSite=None + Secure is required for cross-origin cookies.
+  // Locally (HTTP) SameSite=Lax + Secure=false is needed — browsers
+  // reject Secure cookies over plain HTTP.
+  const isProd = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure:   isProd,
+    sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+    path:     '/',
+    maxAge:   maxAgeSeconds,
+  };
+};
 
 const SignupSchema = {
   description:

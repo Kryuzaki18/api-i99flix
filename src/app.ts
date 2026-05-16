@@ -29,30 +29,32 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(fastifyHelmet, { contentSecurityPolicy: false });
   await app.register(fastifyRateLimit, { global: false });
 
+  // ── CORS ──────────────────────────────────────────────────────────────────
+  // CLIENT_ORIGIN supports comma-separated values so multiple origins can be
+  // allowed (e.g. local dev + Vercel preview + Vercel production).
+  // Example: "http://localhost:1234,https://my-app.vercel.app"
   await app.register(fastifyCors, {
     origin: (origin, cb) => {
-      // Parse CLIENT_ORIGIN as comma-separated list to support multiple origins
-      // e.g. "http://localhost:1234,https://myapp.netlify.app"
       const allowed = app.config.CLIENT_ORIGIN
         .split(',')
         .map((o) => o.trim())
         .filter(Boolean);
 
-      // Allow requests with no origin (mobile apps, curl, Postman, same-origin)
+      // Allow requests with no Origin header (server-to-server, curl, Postman)
       if (!origin || allowed.includes(origin)) {
         cb(null, true);
       } else {
-        cb(new Error(`CORS: origin ${origin} not allowed`), false);
+        cb(new Error(`CORS: origin "${origin}" not allowed`), false);
       }
     },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    methods:        ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     exposedHeaders: ["Set-Cookie"],
-    credentials: true,
+    credentials:    true,
   });
 
   await app.register(fastifyCookie, {
-    hook: "onRequest",
+    hook:         "onRequest",
     parseOptions: {},
   });
 
@@ -60,27 +62,27 @@ export async function buildApp(): Promise<FastifyInstance> {
     secret: app.config.JWT_SECRET,
     cookie: {
       cookieName: COOKIE_NAME,
-      signed: false,
+      signed:     false,
     },
   });
 
   await app.register(fastifySwagger, {
     openapi: {
       info: {
-        title: "i99flix Movie API",
+        title:       "i99flix API",
         description: "REST API for the i99flix movie streaming platform",
-        version: "1.0.0",
+        version:     "1.0.0",
       },
       components: {
         securitySchemes: {
           bearerAuth: {
-            type: "http",
-            scheme: "bearer",
+            type:         "http",
+            scheme:       "bearer",
             bearerFormat: "JWT",
           },
           cookieAuth: {
             type: "apiKey",
-            in: "cookie",
+            in:   "cookie",
             name: COOKIE_NAME,
           },
         },
