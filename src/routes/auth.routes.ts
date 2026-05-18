@@ -11,17 +11,19 @@ import {
   SALT_ROUNDS,
   SEVEN_DAYS_SECONDS,
   RESET_TOKEN_TTL_MS,
+  TOKEN_EXPIRY_REMEMBER,
+  TOKEN_EXPIRY_SESSION,
 } from "../constants/auth.constant.js";
 import User from "../schemas/users.schema.js";
 import { createEmailService } from "../services/email.service.js";
 
-const cookieOptions = (maxAgeSeconds: number) => {
+const cookieOptions = (maxAgeSeconds?: number) => {
   return {
     httpOnly: true,
     secure:   true,
     sameSite: 'lax' as const,
     path:     '/',
-    maxAge: maxAgeSeconds,
+    ...(maxAgeSeconds !== undefined ? { maxAge: maxAgeSeconds } : {}),
   };
 };
 
@@ -62,7 +64,8 @@ const MeSchema = {
 
 const SigninSchema = {
   description:
-    "Verifies user credentials by fetching account details and issues a secure httpOnly session cookie.",
+    "Verifies user credentials by fetching account details and issues a secure httpOnly session cookie. " +
+    "When rememberMe is true the cookie persists for 7 days; otherwise it is a session cookie.",
   tags: ["Authentication"],
   body: Type.Object({
     email: Type.String({
@@ -71,6 +74,7 @@ const SigninSchema = {
       pattern: EMAIL_REGEX.source,
     }),
     password: Type.String({ minLength: 7 }),
+    rememberMe: Type.Optional(Type.Boolean()),
   }),
   response: {
     200: Type.Object({ message: Type.String() }),
@@ -219,9 +223,10 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
     async (request, reply) => {
       try {
-        const { email, password } = request.body as {
+        const { email, password, rememberMe } = request.body as {
           email: string;
           password: string;
+          rememberMe?: boolean;
         };
 
         if (!EMAIL_REGEX.test(email)) {
@@ -247,12 +252,20 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           return reply.code(400).send({ error: "Invalid email or password" });
         }
 
+        // When "remember me" is checked the token and cookie both last 7 days.
+        // Otherwise the JWT expires in 1 day and the cookie is a session cookie
+        // (no maxAge) so it is cleared when the browser tab/window is closed.
+        const tokenExpiry = rememberMe ? TOKEN_EXPIRY_REMEMBER : TOKEN_EXPIRY_SESSION;
         const token = fastify.jwt.sign(
           { email: user.email },
-          { expiresIn: "7d" },
+          { expiresIn: tokenExpiry },
         );
 
-        reply.setCookie(COOKIE_NAME, token, cookieOptions(SEVEN_DAYS_SECONDS));
+        const options = rememberMe
+          ? cookieOptions(SEVEN_DAYS_SECONDS)
+          : cookieOptions(); // session cookie — no maxAge
+
+        reply.setCookie(COOKIE_NAME, token, options);
         return reply.code(200).send({ message: "Signed in successfully" });
       } catch (error: any) {
         if (error.status && error.status >= 400 && error.status < 500) {
@@ -272,7 +285,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     ROUTES.SIGNOUT,
     { schema: SignoutSchema },
     async (_request, reply) => {
-      reply.clearCookie(COOKIE_NAME, cookieOptions(0));
+      reply.clearCookie(COOKIE_NAME, { path: '/' });
       return reply.code(200).send({ message: "Signed out successfully" });
     },
   );
