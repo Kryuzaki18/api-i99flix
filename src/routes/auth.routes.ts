@@ -215,7 +215,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     ROUTES.SIGNIN,
     {
       schema: SigninSchema,
-      config: { rateLimit: { max: 3, timeWindow: "1 minute" } },
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     },
     async (request, reply) => {
       try {
