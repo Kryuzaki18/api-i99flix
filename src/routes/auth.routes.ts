@@ -27,6 +27,7 @@ const cookieOptions = (maxAgeSeconds: number) => {
     sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
     path:     '/',
     maxAge:   maxAgeSeconds,
+    domain: undefined,
   };
 };
 
