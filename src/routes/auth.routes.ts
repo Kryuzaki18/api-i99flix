@@ -9,7 +9,7 @@ import { ErrorBody } from "../schemas/shared.schema.js";
 import {
   COOKIE_NAME,
   SALT_ROUNDS,
-  SEVEN_DAYS_SECONDS,
+  THIRTY_DAYS_SECONDS,
   RESET_TOKEN_TTL_MS,
   TOKEN_EXPIRY_REMEMBER,
   TOKEN_EXPIRY_SESSION,
@@ -262,7 +262,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         );
 
         const options = rememberMe
-          ? cookieOptions(SEVEN_DAYS_SECONDS)
+          ? cookieOptions(THIRTY_DAYS_SECONDS)
           : cookieOptions(); // session cookie — no maxAge
 
         reply.setCookie(COOKIE_NAME, token, options);
