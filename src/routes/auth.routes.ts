@@ -16,18 +16,12 @@ import User from "../schemas/users.schema.js";
 import { createEmailService } from "../services/email.service.js";
 
 const cookieOptions = (maxAgeSeconds: number) => {
-  // On Render (production) both frontend and backend are HTTPS so
-  // SameSite=None + Secure is required for cross-origin cookies.
-  // Locally (HTTP) SameSite=Lax + Secure=false is needed — browsers
-  // reject Secure cookies over plain HTTP.
-  const isProd = process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    secure:   isProd,
-    sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+    secure:   true,
+    sameSite: 'lax' as const,
     path:     '/',
-    maxAge:   maxAgeSeconds,
-    domain: undefined,
+    maxAge: maxAgeSeconds,
   };
 };
 
@@ -117,7 +111,7 @@ const ResetPasswordSchema = {
     "Token is single-use and expires after 1 hour.",
   tags: ["Authentication"],
   body: Type.Object({
-    token:    Type.String({ minLength: 1 }),
+    token: Type.String({ minLength: 1 }),
     password: Type.String({ minLength: 7 }),
   }),
   response: {
@@ -169,8 +163,14 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         // Send welcome email — fire-and-forget so a mail failure never
         // blocks the signup response. Errors are logged for observability.
-        mailer.sendWelcome({ to: email.toLowerCase().trim(), name: name.trim() })
-          .catch((err: Error) => request.log.error({ err, message: err.message }, "Failed to send welcome email"));
+        mailer
+          .sendWelcome({ to: email.toLowerCase().trim(), name: name.trim() })
+          .catch((err: Error) =>
+            request.log.error(
+              { err, message: err.message },
+              "Failed to send welcome email",
+            ),
+          );
 
         return reply
           .code(201)
@@ -260,12 +260,10 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             .code(401)
             .send({ error: error.details?.msg || "Invalid credentials." });
         }
-        return reply
-          .code(400)
-          .send({
-            error: error.message || "Failed to sign in",
-            details: error.details,
-          });
+        return reply.code(400).send({
+          error: error.message || "Failed to sign in",
+          details: error.details,
+        });
       }
     },
   );
@@ -299,21 +297,28 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       const user = await User.findOne({ email: email.toLowerCase().trim() });
 
       if (user) {
-        const token  = crypto.randomBytes(32).toString("hex");
+        const token = crypto.randomBytes(32).toString("hex");
         const expiry = new Date(Date.now() + RESET_TOKEN_TTL_MS);
 
-        user.resetToken       = token;
+        user.resetToken = token;
         user.resetTokenExpiry = expiry;
         await user.save();
 
         // Build the reset URL and send the email — fire-and-forget.
         const resetUrl = `${fastify.config.CLIENT_ORIGIN}/reset-password?token=${token}`;
 
-        mailer.sendPasswordReset({
-          to:       user.email,
-          name:     user.name,
-          resetUrl,
-        }).catch((err: Error) => request.log.error({ err, message: err.message }, "Failed to send password reset email"));
+        mailer
+          .sendPasswordReset({
+            to: user.email,
+            name: user.name,
+            resetUrl,
+          })
+          .catch((err: Error) =>
+            request.log.error(
+              { err, message: err.message },
+              "Failed to send password reset email",
+            ),
+          );
       }
 
       // Always return the same message to prevent user enumeration
@@ -333,12 +338,12 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
     async (request, reply) => {
       const { token, password } = request.body as {
-        token:    string;
+        token: string;
         password: string;
       };
 
       const user = await User.findOne({
-        resetToken:       token,
+        resetToken: token,
         resetTokenExpiry: { $gt: new Date() },
       });
 
@@ -348,26 +353,36 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           .send({ error: "Reset link is invalid or has expired." });
       }
 
-      user.password         = await bcrypt.hash(password, SALT_ROUNDS);
-      user.resetToken       = undefined;
+      user.password = await bcrypt.hash(password, SALT_ROUNDS);
+      user.resetToken = undefined;
       user.resetTokenExpiry = undefined;
       await user.save();
 
       // Notify the user that their password was changed — fire-and-forget.
-      const changedAt = new Date().toLocaleString("en-US", {
-        dateStyle: "long",
-        timeStyle: "short",
-        timeZone:  "UTC",
-      }) + " UTC";
+      const changedAt =
+        new Date().toLocaleString("en-US", {
+          dateStyle: "long",
+          timeStyle: "short",
+          timeZone: "UTC",
+        }) + " UTC";
 
-      mailer.sendPasswordChanged({
-        to:        user.email,
-        name:      user.name,
-        email:     user.email,
-        changedAt,
-      }).catch((err: Error) => request.log.error({ err, message: err.message }, "Failed to send password-changed email"));
+      mailer
+        .sendPasswordChanged({
+          to: user.email,
+          name: user.name,
+          email: user.email,
+          changedAt,
+        })
+        .catch((err: Error) =>
+          request.log.error(
+            { err, message: err.message },
+            "Failed to send password-changed email",
+          ),
+        );
 
-      return reply.code(200).send({ message: "Password updated successfully." });
+      return reply
+        .code(200)
+        .send({ message: "Password updated successfully." });
     },
   );
 };
