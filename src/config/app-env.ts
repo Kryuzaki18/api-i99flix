@@ -14,12 +14,8 @@ const schema = Type.Object({
   TMDB_KEY:      Type.String({ default: "" }),
   TMDB_READ_ACCESS_TOKEN: Type.String({ default: "" }),
 
-  SMTP_HOST:     Type.String({ default: "smtp.gmail.com" }),
-  SMTP_PORT:     Type.Number({ default: 587 }),
-  SMTP_SECURE:   Type.Boolean({ default: false }), 
-  SMTP_USER:     Type.String({ default: "" }),
-  SMTP_PASS:     Type.String({ default: "" }),
-  EMAIL_FROM:    Type.String({ default: "i99flix <noreply@i99flix.com>" }),
+  RESEND_API_KEY: Type.String({ default: "" }),
+  EMAIL_FROM:     Type.String({ default: "i99flix <onboarding@resend.dev>" }),
 });
 
 declare module "fastify" {
@@ -32,11 +28,7 @@ declare module "fastify" {
       MONGODB_URI:              string;
       TMDB_KEY:                 string;
       TMDB_READ_ACCESS_TOKEN:   string;
-      SMTP_HOST:                string;
-      SMTP_PORT:                number;
-      SMTP_SECURE:              boolean;
-      SMTP_USER:                string;
-      SMTP_PASS:                string;
+      RESEND_API_KEY:           string;
       EMAIL_FROM:               string;
     };
   }

@@ -1,6 +1,5 @@
 
-
-import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -21,14 +20,10 @@ function render(template: string, vars: Record<string, string>): string {
 }
 
 export interface EmailConfig {
-  SMTP_HOST:     string;
-  SMTP_PORT:     number;
-  SMTP_SECURE:   boolean;
-  SMTP_USER:     string;
-  SMTP_PASS:     string;
-  EMAIL_FROM:    string;
-  CLIENT_ORIGIN: string;
-  LOGO_URL:      string;
+  RESEND_API_KEY: string;
+  EMAIL_FROM:     string;
+  CLIENT_ORIGIN:  string;
+  LOGO_URL:       string;
 }
 
 export interface WelcomeEmailPayload {
@@ -63,30 +58,12 @@ export interface EmailService {
 }
 
 export function createEmailService(config: EmailConfig): EmailService {
-  const transporter: Transporter = nodemailer.createTransport({
-    host:   config.SMTP_HOST,
-    port:   config.SMTP_PORT,
-    secure: config.SMTP_SECURE,
-    auth: {
-      user: config.SMTP_USER,
-      pass: config.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
+  const resend = new Resend(config.RESEND_API_KEY);
 
-  // Verify SMTP connection at startup so misconfiguration surfaces in logs immediately
-  transporter.verify().then(() => {
-    console.log("[Mailer] SMTP connection verified");
-  }).catch((err: Error) => {
-    console.error("[Mailer] SMTP connection FAILED — emails will not be sent:", err.message);
-  });
-
-  const welcomeTemplate           = loadTemplate("welcome.template.html");
-  const verifyEmailTemplate       = loadTemplate("verify-email.template.html");
-  const resetPasswordTemplate     = loadTemplate("reset-password.template.html");
-  const passwordChangedTemplate   = loadTemplate("password-changed.template.html");
+  const welcomeTemplate         = loadTemplate("welcome.template.html");
+  const verifyEmailTemplate     = loadTemplate("verify-email.template.html");
+  const resetPasswordTemplate   = loadTemplate("reset-password.template.html");
+  const passwordChangedTemplate = loadTemplate("password-changed.template.html");
 
   return {
 
@@ -96,13 +73,13 @@ export function createEmailService(config: EmailConfig): EmailService {
         LOGO_URL:      config.LOGO_URL,
         CLIENT_ORIGIN: config.CLIENT_ORIGIN,
       });
-
-      await transporter.sendMail({
+      const { error } = await resend.emails.send({
         from:    config.EMAIL_FROM,
         to,
         subject: "Welcome to i99flix 🎬 — Your account is ready",
         html,
       });
+      if (error) throw new Error(error.message);
     },
 
     async sendVerificationEmail({ to, name, verifyUrl }: VerificationEmailPayload): Promise<void> {
@@ -112,13 +89,13 @@ export function createEmailService(config: EmailConfig): EmailService {
         LOGO_URL:      config.LOGO_URL,
         CLIENT_ORIGIN: config.CLIENT_ORIGIN,
       });
-
-      await transporter.sendMail({
+      const { error } = await resend.emails.send({
         from:    config.EMAIL_FROM,
         to,
         subject: "Verify your i99flix email address ✉️",
         html,
       });
+      if (error) throw new Error(error.message);
     },
 
     async sendPasswordReset({ to, name, resetUrl }: PasswordResetEmailPayload): Promise<void> {
@@ -128,13 +105,13 @@ export function createEmailService(config: EmailConfig): EmailService {
         LOGO_URL:      config.LOGO_URL,
         CLIENT_ORIGIN: config.CLIENT_ORIGIN,
       });
-
-      await transporter.sendMail({
+      const { error } = await resend.emails.send({
         from:    config.EMAIL_FROM,
         to,
         subject: "Reset your i99flix password 🔑",
         html,
       });
+      if (error) throw new Error(error.message);
     },
 
     async sendPasswordChanged({ to, name, email, changedAt }: PasswordChangedEmailPayload): Promise<void> {
@@ -145,13 +122,13 @@ export function createEmailService(config: EmailConfig): EmailService {
         LOGO_URL:      config.LOGO_URL,
         CLIENT_ORIGIN: config.CLIENT_ORIGIN,
       });
-
-      await transporter.sendMail({
+      const { error } = await resend.emails.send({
         from:    config.EMAIL_FROM,
         to,
         subject: "Your i99flix password was changed 🔐",
         html,
       });
+      if (error) throw new Error(error.message);
     },
   };
 }
