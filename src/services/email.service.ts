@@ -28,6 +28,7 @@ export interface EmailConfig {
   SMTP_PASS:     string;
   EMAIL_FROM:    string;
   CLIENT_ORIGIN: string;
+  LOGO_URL:      string;
 }
 
 export interface WelcomeEmailPayload {
@@ -86,6 +87,7 @@ export function createEmailService(config: EmailConfig): EmailService {
     async sendWelcome({ to, name }: WelcomeEmailPayload): Promise<void> {
       const html = render(welcomeTemplate, {
         NAME:          name,
+        LOGO_URL:      config.LOGO_URL,
         CLIENT_ORIGIN: config.CLIENT_ORIGIN,
       });
 
@@ -101,6 +103,7 @@ export function createEmailService(config: EmailConfig): EmailService {
       const html = render(verifyEmailTemplate, {
         NAME:          name,
         VERIFY_URL:    verifyUrl,
+        LOGO_URL:      config.LOGO_URL,
         CLIENT_ORIGIN: config.CLIENT_ORIGIN,
       });
 
@@ -116,6 +119,7 @@ export function createEmailService(config: EmailConfig): EmailService {
       const html = render(resetPasswordTemplate, {
         NAME:          name,
         RESET_URL:     resetUrl,
+        LOGO_URL:      config.LOGO_URL,
         CLIENT_ORIGIN: config.CLIENT_ORIGIN,
       });
 
@@ -132,6 +136,7 @@ export function createEmailService(config: EmailConfig): EmailService {
         NAME:          name,
         EMAIL:         email,
         CHANGED_AT:    changedAt,
+        LOGO_URL:      config.LOGO_URL,
         CLIENT_ORIGIN: config.CLIENT_ORIGIN,
       });
 
