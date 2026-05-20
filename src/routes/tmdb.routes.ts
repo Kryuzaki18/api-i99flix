@@ -1,45 +1,4 @@
-/**
- * TMDB Proxy Routes  —  /api/v1/tmdb/*
- *
- * All routes require authentication (requireAuth).
- * The TMDB API key is never exposed to the client — all requests are
- * proxied server-side and only the shaped response is returned.
- *
- * Rate limiting is applied per-route to stay within TMDB's limits.
- *
- * ── Movies ────────────────────────────────────────────────────────────────────
- * GET /api/v1/tmdb/movies/popular
- * GET /api/v1/tmdb/movies/top-rated
- * GET /api/v1/tmdb/movies/now-playing
- * GET /api/v1/tmdb/movies/upcoming
- * GET /api/v1/tmdb/movies/trending
- * GET /api/v1/tmdb/movies/discover
- * GET /api/v1/tmdb/movies/search          ?query=&page=
- * GET /api/v1/tmdb/movies/:id
- * GET /api/v1/tmdb/movies/:id/videos
- * GET /api/v1/tmdb/movies/:id/credits
- * GET /api/v1/tmdb/movies/:id/similar
- * GET /api/v1/tmdb/movies/:id/recommendations
- *
- * ── TV Series ─────────────────────────────────────────────────────────────────
- * GET /api/v1/tmdb/tv/popular
- * GET /api/v1/tmdb/tv/top-rated
- * GET /api/v1/tmdb/tv/on-the-air
- * GET /api/v1/tmdb/tv/airing-today
- * GET /api/v1/tmdb/tv/trending
- * GET /api/v1/tmdb/tv/discover
- * GET /api/v1/tmdb/tv/search              ?query=&page=
- * GET /api/v1/tmdb/tv/:id
- * GET /api/v1/tmdb/tv/:id/videos
- * GET /api/v1/tmdb/tv/:id/credits
- * GET /api/v1/tmdb/tv/:id/similar
- * GET /api/v1/tmdb/tv/:id/recommendations
- *
- * ── Shared ────────────────────────────────────────────────────────────────────
- * GET /api/v1/tmdb/search                 ?query=&page=  (multi-search)
- * GET /api/v1/tmdb/genres/movie
- * GET /api/v1/tmdb/genres/tv
- */
+
 
 import { type FastifyInstance, type FastifyPluginAsync, type FastifyReply } from "fastify";
 import { Type } from "@sinclair/typebox";
@@ -47,8 +6,6 @@ import { Type } from "@sinclair/typebox";
 import { requireAuth }       from "../hooks/auth.hook.js";
 import { createTmdbService } from "../services/tmdb.service.js";
 import { ErrorBody }         from "../schemas/shared.schema.js";
-
-// ── Shared query/param schemas ────────────────────────────────────────────────
 
 const PageQuery = Type.Object({
   page:     Type.Optional(Type.Number({ minimum: 1, default: 1 })),
@@ -91,16 +48,12 @@ const IdParam = Type.Object({
   id: Type.Number({ minimum: 1 }),
 });
 
-// ── Rate limit config (shared across TMDB routes) ─────────────────────────────
-// TMDB allows ~50 req/s per IP. We stay well under that.
 const tmdbRateLimit = { max: 30, timeWindow: "1 minute" };
 
-// ── Route tags for Swagger ────────────────────────────────────────────────────
 const MOVIE_TAG = ["TMDB — Movies"];
 const TV_TAG    = ["TMDB — TV Series"];
 const SHARED_TAG = ["TMDB — Shared"];
 
-// ── Helper: forward only safe query params to TMDB ───────────────────────────
 function pickParams(
   query: Record<string, unknown>,
   ...keys: string[]
@@ -112,26 +65,19 @@ function pickParams(
   return out;
 }
 
-// ── Plugin ────────────────────────────────────────────────────────────────────
-
 const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   const tmdb = createTmdbService(fastify.config.TMDB_KEY);
 
-  // ── Generic error handler ──────────────────────────────────────────────────
   function handleTmdbError(error: unknown, reply: FastifyReply) {
     const err = error as { statusCode?: number; message?: string };
     const status = err.statusCode ?? 500;
-    // Map TMDB 404 → our 404, everything else → 502 (bad gateway)
+
     const code = status === 404 ? 404 : status >= 400 && status < 500 ? 400 : 502;
     return reply.code(code).send({
       error:   err.message ?? "TMDB request failed",
       details: `TMDB responded with status ${status}`,
     });
   }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // PUBLIC — no auth required (used by login/signup showcase)
-  // ════════════════════════════════════════════════════════════════════════════
 
   fastify.get("/tmdb/showcase", {
     schema: {
@@ -143,17 +89,13 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       response: { 200: Type.Any(), 502: ErrorBody },
     },
     config: { rateLimit: { max: 60, timeWindow: "1 minute" } },
-    // No preHandler — intentionally public
+
   }, async (request, reply) => {
     try {
       const data = await tmdb.movies.trending(request.query as Record<string, unknown>);
       return reply.send(data);
     } catch (e) { return handleTmdbError(e, reply); }
   });
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // MOVIES
-  // ════════════════════════════════════════════════════════════════════════════
 
   fastify.get("/tmdb/movies/popular", {
     schema: {
@@ -369,10 +311,6 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // TV SERIES
-  // ════════════════════════════════════════════════════════════════════════════
-
   fastify.get("/tmdb/tv/popular", {
     schema: {
       description: "Get a list of TV series ordered by popularity.",
@@ -586,10 +524,6 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       return reply.send(data);
     } catch (e) { return handleTmdbError(e, reply); }
   });
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // SHARED
-  // ════════════════════════════════════════════════════════════════════════════
 
   fastify.get("/tmdb/search", {
     schema: {

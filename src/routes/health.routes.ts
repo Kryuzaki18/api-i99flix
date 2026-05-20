@@ -4,8 +4,6 @@ import mongoose from "mongoose";
 
 import { ROUTES } from "../config/app-routes.js";
 
-// Mongoose readyState values:
-//   0 = disconnected  1 = connected  2 = connecting  3 = disconnecting
 const DB_STATES: Record<number, string> = {
   0: "disconnected",
   1: "connected",

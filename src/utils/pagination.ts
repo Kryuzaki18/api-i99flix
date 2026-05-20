@@ -1,6 +1,4 @@
-/**
- * Pagination helpers shared across routes.
- */
+
 
 export interface PaginationParams {
   page:  number;
@@ -15,7 +13,6 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
-/** Parse and clamp page/limit from raw query params */
 export function parsePagination(
   rawPage:  unknown,
   rawLimit: unknown,
@@ -26,7 +23,6 @@ export function parsePagination(
   return { page, limit };
 }
 
-/** Build a paginated result envelope */
 export function paginate<T>(
   data:  T[],
   total: number,

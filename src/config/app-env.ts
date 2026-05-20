@@ -1,12 +1,4 @@
-/**
- * Environment configuration plugin using @fastify/env.
- *
- * Validates and coerces all required environment variables at startup.
- * The app will refuse to start if any required variable is missing.
- *
- * Augments FastifyInstance with `app.config` so all plugins and routes
- * can access env vars in a type-safe way.
- */
+
 
 import fp from "fastify-plugin";
 import fastifyEnv from "@fastify/env";
@@ -20,10 +12,10 @@ const schema = Type.Object({
   MONGODB_URI:   Type.String({ default: "mongodb://localhost:27017/moviedb" }),
   TMDB_KEY:      Type.String({ default: "" }),
   TMDB_READ_ACCESS_TOKEN: Type.String({ default: "" }),
-  // ── Nodemailer / SMTP ──────────────────────────────────────────────────────
+
   SMTP_HOST:     Type.String({ default: "smtp.gmail.com" }),
   SMTP_PORT:     Type.Number({ default: 587 }),
-  SMTP_SECURE:   Type.Boolean({ default: false }), // true = port 465 (TLS), false = STARTTLS
+  SMTP_SECURE:   Type.Boolean({ default: false }), 
   SMTP_USER:     Type.String({ default: "" }),
   SMTP_PASS:     Type.String({ default: "" }),
   EMAIL_FROM:    Type.String({ default: "i99flix <noreply@i99flix.com>" }),

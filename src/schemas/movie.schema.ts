@@ -73,8 +73,7 @@ const MovieSchema: Schema = new Schema(
   { timestamps: true },
 );
 
-// Indexes for common query patterns
-MovieSchema.index({ title: "text", description: "text" }); // full-text search
+MovieSchema.index({ title: "text", description: "text" }); 
 MovieSchema.index({ genre: 1 });
 MovieSchema.index({ year: 1 });
 MovieSchema.index({ rating: -1 });

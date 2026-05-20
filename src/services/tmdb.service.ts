@@ -1,27 +1,12 @@
-/**
- * TMDB Service
- *
- * Thin wrapper around the TMDB API v3 using the native `undici` fetch
- * (already a project dependency — no new packages needed).
- *
- * Authentication: Bearer token (API Read Access Token) sent via the
- * Authorization header — the recommended server-side approach per TMDB docs.
- * https://developer.themoviedb.org/docs/authentication-application
- *
- * The TMDB_KEY env var must be the Read Access Token (starts with "eyJ…"),
- * NOT the short API key. If you only have the short key, set it as
- * TMDB_KEY and the service will fall back to ?api_key= query param auth.
- */
+
 
 import { request as undiciRequest } from "undici";
 import { TMDB_BASE_URL } from "../config/tmdb.js";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 export interface TmdbRequestOptions {
-  /** Path relative to TMDB_BASE_URL, e.g. "/movie/popular" */
+
   path:   string;
-  /** Query params forwarded to TMDB */
+
   params?: Record<string, string | number | boolean | undefined>;
 }
 
@@ -31,18 +16,11 @@ export interface TmdbError {
   success:        false;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * Determine auth strategy from the key format.
- * JWT-style tokens (Read Access Token) start with "eyJ".
- * Short API keys are 32-char hex strings.
- */
 function buildAuthHeaders(key: string): Record<string, string> {
   if (key.startsWith("eyJ")) {
     return { Authorization: `Bearer ${key}` };
   }
-  // Fallback: short API key — appended as query param in buildUrl
+
   return {};
 }
 
@@ -53,7 +31,6 @@ function buildUrl(
 ): string {
   const url = new URL(`${TMDB_BASE_URL}${path}`);
 
-  // Append short API key as query param if not using Bearer
   if (!key.startsWith("eyJ")) {
     url.searchParams.set("api_key", key);
   }
@@ -67,8 +44,6 @@ function buildUrl(
   return url.toString();
 }
 
-// ── Service factory ───────────────────────────────────────────────────────────
-
 export function createTmdbService(apiKey: string) {
   const headers = {
     ...buildAuthHeaders(apiKey),
@@ -76,9 +51,6 @@ export function createTmdbService(apiKey: string) {
     Accept:         "application/json",
   };
 
-  /**
-   * Core fetch wrapper. Throws a structured error on non-2xx responses.
-   */
   async function tmdbFetch<T>(options: TmdbRequestOptions): Promise<T> {
     const url = buildUrl(options.path, options.params ?? {}, apiKey);
 
@@ -99,8 +71,6 @@ export function createTmdbService(apiKey: string) {
 
     return json as T;
   }
-
-  // ── Movies ──────────────────────────────────────────────────────────────────
 
   const movies = {
     popular:     (params?: Record<string, unknown>) =>
@@ -140,8 +110,6 @@ export function createTmdbService(apiKey: string) {
       tmdbFetch({ path: `/movie/${id}/recommendations`, params: params as never }),
   };
 
-  // ── TV Series ───────────────────────────────────────────────────────────────
-
   const tv = {
     popular:     (params?: Record<string, unknown>) =>
       tmdbFetch({ path: "/tv/popular",        params: params as never }),
@@ -179,8 +147,6 @@ export function createTmdbService(apiKey: string) {
     recommendations: (id: number, params?: Record<string, unknown>) =>
       tmdbFetch({ path: `/tv/${id}/recommendations`, params: params as never }),
   };
-
-  // ── Shared ──────────────────────────────────────────────────────────────────
 
   const shared = {
     searchMulti: (params: Record<string, unknown>) =>

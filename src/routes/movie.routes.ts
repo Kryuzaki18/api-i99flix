@@ -1,12 +1,4 @@
-/**
- * Movie CRUD routes
- *
- * GET    /api/v1/movies          — list with filters + pagination
- * GET    /api/v1/movies/:id      — single movie
- * POST   /api/v1/movies          — create (auth required)
- * PUT    /api/v1/movies/:id      — full update (auth required)
- * DELETE /api/v1/movies/:id      — delete (auth required)
- */
+
 
 import { type FastifyInstance, type FastifyPluginAsync } from "fastify";
 import { Type } from "@sinclair/typebox";
@@ -16,8 +8,6 @@ import { ErrorBody } from "../schemas/shared.schema.js";
 import Movie from "../schemas/movie.schema.js";
 import { requireAuth } from "../hooks/auth.hook.js";
 import { parsePagination, paginate } from "../utils/pagination.js";
-
-// ── Shared TypeBox schemas ────────────────────────────────────────────────────
 
 const MovieBody = Type.Object({
   title:       Type.String({ minLength: 1, maxLength: 200 }),
@@ -133,7 +123,6 @@ const DeleteMovieSchema = {
 
 const movieRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
-  // GET /api/v1/movies
   fastify.get(
     ROUTES.MOVIES,
     { schema: ListMoviesSchema },
@@ -154,7 +143,6 @@ const movieRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         const { page, limit } = parsePagination(q.page, q.limit);
 
-        // Build filter
         const filter: Record<string, unknown> = {};
 
         if (q.genre)      filter["genre"]      = q.genre;
@@ -168,7 +156,6 @@ const movieRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           filter["$text"] = { $search: safe };
         }
 
-        // Whitelist sortBy to prevent injection
         const ALLOWED_SORT = new Set(["title", "rating", "year", "createdAt", "updatedAt"]);
         const sortField = ALLOWED_SORT.has(q.sortBy ?? "") ? q.sortBy! : "createdAt";
         const sortOrder = q.order === "asc" ? 1 : -1;
@@ -190,7 +177,6 @@ const movieRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
   );
 
-  // GET /api/v1/movies/:id
   fastify.get(
     ROUTES.MOVIE_BY_ID,
     { schema: GetMovieSchema },
@@ -214,7 +200,6 @@ const movieRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
   );
 
-  // POST /api/v1/movies  (auth required)
   fastify.post(
     ROUTES.MOVIES,
     { schema: CreateMovieSchema, preHandler: [requireAuth] },
@@ -246,7 +231,6 @@ const movieRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
   );
 
-  // PUT /api/v1/movies/:id  (auth required)
   fastify.put(
     ROUTES.MOVIE_BY_ID,
     { schema: UpdateMovieSchema, preHandler: [requireAuth] },
@@ -279,7 +263,6 @@ const movieRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
   );
 
-  // DELETE /api/v1/movies/:id  (auth required)
   fastify.delete(
     ROUTES.MOVIE_BY_ID,
     { schema: DeleteMovieSchema, preHandler: [requireAuth] },

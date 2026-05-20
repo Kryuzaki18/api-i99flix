@@ -1,8 +1,7 @@
 export const ROUTES = {
-  // System
+
   HEALTH: "/health",
 
-  // Auth
   SIGNUP:          "/signup",
   SIGNIN:          "/signin",
   SIGNOUT:         "/signout",
@@ -10,11 +9,9 @@ export const ROUTES = {
   FORGOT_PASSWORD: "/forgot-password",
   RESET_PASSWORD:  "/reset-password",
 
-  // Movies — CRUD
-  MOVIES:      "/movies",       // GET (list) + POST (create)
-  MOVIE_BY_ID: "/movies/:id",  // GET (one) + PUT (update) + DELETE
+  MOVIES:      "/movies",       
+  MOVIE_BY_ID: "/movies/:id",  
 
-  // TMDB Proxy — Movies
   TMDB_MOVIES_POPULAR:         "/tmdb/movies/popular",
   TMDB_MOVIES_TOP_RATED:       "/tmdb/movies/top-rated",
   TMDB_MOVIES_NOW_PLAYING:     "/tmdb/movies/now-playing",
@@ -28,7 +25,6 @@ export const ROUTES = {
   TMDB_MOVIE_SIMILAR:          "/tmdb/movies/:id/similar",
   TMDB_MOVIE_RECOMMENDATIONS:  "/tmdb/movies/:id/recommendations",
 
-  // TMDB Proxy — TV Series
   TMDB_TV_POPULAR:             "/tmdb/tv/popular",
   TMDB_TV_TOP_RATED:           "/tmdb/tv/top-rated",
   TMDB_TV_ON_THE_AIR:          "/tmdb/tv/on-the-air",
@@ -42,11 +38,9 @@ export const ROUTES = {
   TMDB_TV_SIMILAR:             "/tmdb/tv/:id/similar",
   TMDB_TV_RECOMMENDATIONS:     "/tmdb/tv/:id/recommendations",
 
-  // TMDB Proxy — Shared
   TMDB_SEARCH_MULTI:           "/tmdb/search",
   TMDB_GENRES_MOVIE:           "/tmdb/genres/movie",
   TMDB_GENRES_TV:              "/tmdb/genres/tv",
 
-  // Public (no auth required)
   TMDB_SHOWCASE:               "/tmdb/showcase",
 };

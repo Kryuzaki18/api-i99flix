@@ -29,10 +29,6 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(fastifyHelmet, { contentSecurityPolicy: false });
   await app.register(fastifyRateLimit, { global: false });
 
-  // ── CORS ──────────────────────────────────────────────────────────────────
-  // CLIENT_ORIGIN supports comma-separated values so multiple origins can be
-  // allowed (e.g. local dev + Vercel preview + Vercel production).
-  // Example: "http://localhost:1234,https://my-app.vercel.app"
   await app.register(fastifyCors, {
     origin: (origin, cb) => {
       const allowed = app.config.CLIENT_ORIGIN
@@ -40,7 +36,6 @@ export async function buildApp(): Promise<FastifyInstance> {
         .map((o) => o.trim())
         .filter(Boolean);
 
-      // Allow requests with no Origin header (server-to-server, curl, Postman)
       if (!origin || allowed.includes(origin)) {
         cb(null, true);
       } else {

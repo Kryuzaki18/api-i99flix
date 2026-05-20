@@ -125,8 +125,7 @@ const ResetPasswordSchema = {
 };
 
 const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
-  // Instantiate the email service once per plugin registration so the
-  // transporter and templates are shared across all route handlers.
+
   const mailer = createEmailService(fastify.config);
 
   fastify.post(
@@ -165,8 +164,6 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           password: hashedPassword,
         });
 
-        // Send welcome email — fire-and-forget so a mail failure never
-        // blocks the signup response. Errors are logged for observability.
         mailer
           .sendWelcome({ to: email.toLowerCase().trim(), name: name.trim() })
           .catch((err: Error) =>
@@ -239,7 +236,6 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           email: email.toLowerCase().trim(),
         }).lean();
 
-        // Constant-time comparison even on "not found" to prevent user enumeration.
         const dummyHash =
           "$2b$12$invalidhashfortimingattackprevention000000000000000000";
         const passwordToCompare = user?.password ?? dummyHash;
@@ -252,9 +248,6 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           return reply.code(400).send({ error: "Invalid email or password" });
         }
 
-        // When "remember me" is checked the token and cookie both last 7 days.
-        // Otherwise the JWT expires in 1 day and the cookie is a session cookie
-        // (no maxAge) so it is cleared when the browser tab/window is closed.
         const tokenExpiry = rememberMe ? TOKEN_EXPIRY_REMEMBER : TOKEN_EXPIRY_SESSION;
         const token = fastify.jwt.sign(
           { email: user.email },
@@ -263,7 +256,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         const options = rememberMe
           ? cookieOptions(THIRTY_DAYS_SECONDS)
-          : cookieOptions(); // session cookie — no maxAge
+          : cookieOptions(); 
 
         reply.setCookie(COOKIE_NAME, token, options);
         return reply.code(200).send({ message: "Signed in successfully" });
@@ -290,10 +283,6 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
   );
 
-  // ── Forgot password ────────────────────────────────────────────────────────
-  // Always returns 200 regardless of whether the email exists to prevent
-  // user enumeration. In production, send the token via email; here we
-  // return it in the response body for development convenience.
   fastify.post(
     ROUTES.FORGOT_PASSWORD,
     {
@@ -317,7 +306,6 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         user.resetTokenExpiry = expiry;
         await user.save();
 
-        // Build the reset URL and send the email — fire-and-forget.
         const resetUrl = `${fastify.config.CLIENT_ORIGIN}/reset-password?token=${token}`;
 
         mailer
@@ -334,7 +322,6 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           );
       }
 
-      // Always return the same message to prevent user enumeration
       return reply.code(200).send({
         message:
           "If an account with that email exists, a password reset link has been sent.",
@@ -342,7 +329,6 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
   );
 
-  // ── Reset password ─────────────────────────────────────────────────────────
   fastify.post(
     ROUTES.RESET_PASSWORD,
     {
@@ -371,7 +357,6 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       user.resetTokenExpiry = undefined;
       await user.save();
 
-      // Notify the user that their password was changed — fire-and-forget.
       const changedAt =
         new Date().toLocaleString("en-US", {
           dateStyle: "long",
