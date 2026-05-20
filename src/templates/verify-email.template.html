@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Verify your i99flix email</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; }
+    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    a { color: inherit; }
+
+    body {
+      background-color: #0d0d1a;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .email-wrapper { width: 100%; background-color: #0d0d1a; padding: 40px 16px; }
+
+    .email-container {
+      max-width: 560px;
+      margin: 0 auto;
+      background-color: #1a1a2e;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #2a2a4a;
+    }
+
+    .email-header {
+      background: linear-gradient(135deg, #0d0d1a 0%, #1a0a2e 50%, #0d0d1a 100%);
+      padding: 40px 40px 32px;
+      text-align: center;
+      border-bottom: 1px solid #2a2a4a;
+    }
+
+    .logo { width: 200px; }
+
+    .email-hero { padding: 36px 40px 0; text-align: center; }
+
+    .email-hero__badge {
+      display: inline-block;
+      background: rgba(229, 9, 20, 0.15);
+      border: 1px solid rgba(229, 9, 20, 0.35);
+      color: #e50914;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    .email-hero__icon {
+      width: 72px;
+      height: 72px;
+      background: rgba(229, 9, 20, 0.12);
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      font-size: 32px;
+      line-height: 72px;
+      text-align: center;
+    }
+
+    .email-body { padding: 32px 40px 40px; }
+
+    .email-body__heading {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.25;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .email-body__subheading {
+      font-size: 15px;
+      color: #888888;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .email-cta { text-align: center; margin-bottom: 28px; }
+
+    .email-cta__btn {
+      display: inline-block;
+      background: #e50914;
+      color: #ffffff !important;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 14px 40px;
+      border-radius: 8px;
+      letter-spacing: 0.2px;
+    }
+
+    .email-divider { border: none; border-top: 1px solid #2a2a4a; margin: 28px 0; }
+
+    .email-expiry {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+      font-size: 13px;
+      color: #888888;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .email-expiry strong { color: #ffffff; }
+
+    .email-help { font-size: 13px; color: #666666; line-height: 1.6; text-align: center; }
+    .email-help a { color: #e50914; text-decoration: none; }
+
+    .email-footer {
+      background: #080810;
+      border-top: 1px solid #2a2a4a;
+      padding: 24px 40px;
+      text-align: center;
+    }
+
+    .email-footer__links { margin-bottom: 12px; }
+
+    .email-footer__link {
+      color: #666666;
+      font-size: 12px;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+
+    .email-footer__copy { font-size: 11px; color: #444466; line-height: 1.6; }
+
+    @media only screen and (max-width: 600px) {
+      .email-header, .email-hero, .email-body, .email-footer {
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+      }
+      .email-body__heading { font-size: 22px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+
+      <!-- Header -->
+      <div class="email-header">
+        <a href="{{CLIENT_ORIGIN}}">
+          <img src="{{CLIENT_ORIGIN}}/i99flix-logo.png" class="logo" alt="i99flix" />
+        </a>
+      </div>
+
+      <!-- Hero -->
+      <div class="email-hero">
+        <div class="email-hero__badge">✦ Email Verification</div>
+        <div class="email-hero__icon">✉️</div>
+      </div>
+
+      <!-- Body -->
+      <div class="email-body">
+        <h1 class="email-body__heading">Verify your email, {{NAME}}</h1>
+        <p class="email-body__subheading">
+          Thanks for signing up! Click the button below to confirm your email address
+          and activate your i99flix account.
+        </p>
+
+        <!-- CTA -->
+        <div class="email-cta">
+          <a href="{{VERIFY_URL}}" class="email-cta__btn">Verify Email Address</a>
+        </div>
+
+        <!-- Expiry notice -->
+        <div class="email-expiry">
+          ⏱ This link expires in <strong>24 hours</strong>. If it expires, you can
+          request a new one from the sign-in page.
+        </div>
+
+        <hr class="email-divider" />
+
+        <p class="email-help">
+          Didn't create an account? You can safely ignore this email.<br />
+          Need help? <a href="mailto:support@i99flix.com">support@i99flix.com</a>
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="email-footer">
+        <div class="email-footer__links">
+          <a href="{{CLIENT_ORIGIN}}" class="email-footer__link">Home</a>
+          <a href="#" class="email-footer__link">Privacy Policy</a>
+          <a href="#" class="email-footer__link">Terms of Service</a>
+          <a href="#" class="email-footer__link">Help Center</a>
+        </div>
+        <p class="email-footer__copy">
+          © 2026 i99flix — Stream unlimited movies, anytime.<br />
+          You're receiving this because you created an account with this email address.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</body>
+
+</html>

@@ -11,6 +11,7 @@ import {
   SALT_ROUNDS,
   THIRTY_DAYS_SECONDS,
   RESET_TOKEN_TTL_MS,
+  VERIFICATION_TOKEN_TTL_MS,
   TOKEN_EXPIRY_REMEMBER,
   TOKEN_EXPIRY_SESSION,
 } from "../constants/auth.constant.js";
@@ -59,6 +60,7 @@ const MeSchema = {
   response: {
     200: Type.Boolean(),
     401: Type.Object({ error: Type.String() }),
+    403: Type.Object({ error: Type.String() }),
   },
 };
 
@@ -80,6 +82,7 @@ const SigninSchema = {
     200: Type.Object({ message: Type.String() }),
     400: ErrorBody,
     401: Type.Object({ error: Type.String() }),
+    403: Type.Object({ error: Type.String() }),
   },
 };
 
@@ -124,6 +127,20 @@ const ResetPasswordSchema = {
   },
 };
 
+const VerifyEmailSchema = {
+  description:
+    "Confirms a user's email address using the token sent during signup. " +
+    "Token is single-use and expires after 24 hours.",
+  tags: ["Authentication"],
+  querystring: Type.Object({
+    token: Type.String({ minLength: 1 }),
+  }),
+  response: {
+    200: Type.Object({ message: Type.String() }),
+    400: ErrorBody,
+  },
+};
+
 const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
   const mailer = createEmailService(fastify.config);
@@ -157,25 +174,36 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
       const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
+      const verificationToken  = crypto.randomBytes(32).toString("hex");
+      const verificationExpiry = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
+
       try {
         await User.create({
           name: name.trim(),
           email: email.toLowerCase().trim(),
           password: hashedPassword,
+          verificationToken,
+          verificationTokenExpiry: verificationExpiry,
         });
 
+        const verifyUrl = `${fastify.config.CLIENT_ORIGIN}/verify-email?token=${verificationToken}`;
+
         mailer
-          .sendWelcome({ to: email.toLowerCase().trim(), name: name.trim() })
+          .sendVerificationEmail({
+            to:        email.toLowerCase().trim(),
+            name:      name.trim(),
+            verifyUrl,
+          })
           .catch((err: Error) =>
             request.log.error(
               { err, message: err.message },
-              "Failed to send welcome email",
+              "Failed to send verification email",
             ),
           );
 
         return reply
           .code(201)
-          .send({ message: "Account created successfully" });
+          .send({ message: "Account created. Please check your email to verify your account." });
       } catch (error: any) {
         if (error.code === 11000) {
           const field = Object.keys(error.keyPattern ?? {})[0] ?? "field";
@@ -202,6 +230,9 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         const user = await User.findOne({ email }).lean();
         if (!user) {
           return reply.code(401).send({ error: "Session expired or invalid" });
+        }
+        if (!user.isVerified) {
+          return reply.code(403).send({ error: "Email address not verified" });
         }
         return reply.code(200).send(true);
       } else {
@@ -248,6 +279,10 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           return reply.code(400).send({ error: "Invalid email or password" });
         }
 
+        if (!user.isVerified) {
+          return reply.code(403).send({ error: "Please verify your email address before signing in." });
+        }
+
         const tokenExpiry = rememberMe ? TOKEN_EXPIRY_REMEMBER : TOKEN_EXPIRY_SESSION;
         const token = fastify.jwt.sign(
           { email: user.email },
@@ -256,7 +291,11 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         const options = rememberMe
           ? cookieOptions(THIRTY_DAYS_SECONDS)
-          : cookieOptions(); 
+          : cookieOptions();
+
+        User.findByIdAndUpdate(user._id, { lastLoginAt: new Date() }).catch(
+          (err: Error) => request.log.error({ err }, "Failed to update lastLoginAt"),
+        );
 
         reply.setCookie(COOKIE_NAME, token, options);
         return reply.code(200).send({ message: "Signed in successfully" });
@@ -381,6 +420,45 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       return reply
         .code(200)
         .send({ message: "Password updated successfully." });
+    },
+  );
+
+  fastify.get(
+    ROUTES.VERIFY_EMAIL,
+    {
+      schema: VerifyEmailSchema,
+      config: { rateLimit: { max: 10, timeWindow: "15 minutes" } },
+    },
+    async (request, reply) => {
+      const { token } = request.query as { token: string };
+
+      const user = await User.findOne({
+        verificationToken:       token,
+        verificationTokenExpiry: { $gt: new Date() },
+      });
+
+      if (!user) {
+        return reply
+          .code(400)
+          .send({ error: "Verification link is invalid or has expired." });
+      }
+
+      user.isVerified              = true;
+      user.verifiedAt              = new Date();
+      user.verificationToken       = undefined;
+      user.verificationTokenExpiry = undefined;
+      await user.save();
+
+      mailer
+        .sendWelcome({ to: user.email, name: user.name })
+        .catch((err: Error) =>
+          request.log.error(
+            { err, message: err.message },
+            "Failed to send welcome email after verification",
+          ),
+        );
+
+      return reply.code(200).send({ message: "Email verified successfully. Welcome to i99flix!" });
     },
   );
 };

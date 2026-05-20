@@ -48,8 +48,15 @@ export interface PasswordChangedEmailPayload {
   changedAt: string;
 }
 
+export interface VerificationEmailPayload {
+  to:        string;
+  name:      string;
+  verifyUrl: string;
+}
+
 export interface EmailService {
   sendWelcome(payload: WelcomeEmailPayload): Promise<void>;
+  sendVerificationEmail(payload: VerificationEmailPayload): Promise<void>;
   sendPasswordReset(payload: PasswordResetEmailPayload): Promise<void>;
   sendPasswordChanged(payload: PasswordChangedEmailPayload): Promise<void>;
 }
@@ -70,6 +77,7 @@ export function createEmailService(config: EmailConfig): EmailService {
   });
 
   const welcomeTemplate           = loadTemplate("welcome.template.html");
+  const verifyEmailTemplate       = loadTemplate("verify-email.template.html");
   const resetPasswordTemplate     = loadTemplate("reset-password.template.html");
   const passwordChangedTemplate   = loadTemplate("password-changed.template.html");
 
@@ -85,6 +93,21 @@ export function createEmailService(config: EmailConfig): EmailService {
         from:    config.EMAIL_FROM,
         to,
         subject: "Welcome to i99flix 🎬 — Your account is ready",
+        html,
+      });
+    },
+
+    async sendVerificationEmail({ to, name, verifyUrl }: VerificationEmailPayload): Promise<void> {
+      const html = render(verifyEmailTemplate, {
+        NAME:          name,
+        VERIFY_URL:    verifyUrl,
+        CLIENT_ORIGIN: config.CLIENT_ORIGIN,
+      });
+
+      await transporter.sendMail({
+        from:    config.EMAIL_FROM,
+        to,
+        subject: "Verify your i99flix email address ✉️",
         html,
       });
     },

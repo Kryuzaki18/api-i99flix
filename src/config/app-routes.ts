@@ -8,6 +8,7 @@ export const ROUTES = {
   ME:              "/me",
   FORGOT_PASSWORD: "/forgot-password",
   RESET_PASSWORD:  "/reset-password",
+  VERIFY_EMAIL:    "/verify-email",
 
   MOVIES:      "/movies",       
   MOVIE_BY_ID: "/movies/:id",  
