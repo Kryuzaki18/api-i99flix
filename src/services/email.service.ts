@@ -72,9 +72,15 @@ export function createEmailService(config: EmailConfig): EmailService {
       pass: config.SMTP_PASS,
     },
     tls: {
-
       rejectUnauthorized: false,
     },
+  });
+
+  // Verify SMTP connection at startup so misconfiguration surfaces in logs immediately
+  transporter.verify().then(() => {
+    console.log("[Mailer] SMTP connection verified");
+  }).catch((err: Error) => {
+    console.error("[Mailer] SMTP connection FAILED — emails will not be sent:", err.message);
   });
 
   const welcomeTemplate           = loadTemplate("welcome.template.html");
