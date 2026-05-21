@@ -4,6 +4,7 @@ export const ROUTES = {
 
   SIGNUP:          "/signup",
   SIGNIN:          "/signin",
+  SOCIAL_SIGNIN:   "/social-signin",
   SIGNOUT:         "/signout",
   ME:              "/me",
   FORGOT_PASSWORD: "/forgot-password",

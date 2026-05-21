@@ -21,9 +21,9 @@ import { createEmailService } from "../services/email.service.js";
 const cookieOptions = (maxAgeSeconds?: number) => {
   return {
     httpOnly: true,
-    secure:   true,
+    secure: true,
     sameSite: 'lax' as const,
-    path:     '/',
+    path: '/',
     ...(maxAgeSeconds !== undefined ? { maxAge: maxAgeSeconds } : {}),
   };
 };
@@ -91,6 +91,23 @@ const SignoutSchema = {
   tags: ["Authentication"],
   response: {
     200: Type.Object({ message: Type.String() }),
+  },
+};
+
+const SocialSigninSchema = {
+  description:
+    "Exchanges a Firebase ID token (from Google, Facebook, or X/Twitter OAuth) for a " +
+    "session cookie. Creates the user account on first sign-in (social accounts are " +
+    "pre-verified). Accepts an optional rememberMe flag.",
+  tags: ["Authentication"],
+  body: Type.Object({
+    idToken: Type.String({ minLength: 1 }),
+    rememberMe: Type.Optional(Type.Boolean()),
+  }),
+  response: {
+    200: Type.Object({ message: Type.String() }),
+    400: ErrorBody,
+    401: Type.Object({ error: Type.String() }),
   },
 };
 
@@ -174,7 +191,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
       const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-      const verificationToken  = crypto.randomBytes(32).toString("hex");
+      const verificationToken = crypto.randomBytes(32).toString("hex");
       const verificationExpiry = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
 
       try {
@@ -190,8 +207,8 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         mailer
           .sendVerificationEmail({
-            to:        email.toLowerCase().trim(),
-            name:      name.trim(),
+            to: email.toLowerCase().trim(),
+            name: name.trim(),
             verifyUrl,
           })
           .catch((err: Error) =>
@@ -323,6 +340,69 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   );
 
   fastify.post(
+    ROUTES.SOCIAL_SIGNIN,
+    {
+      schema: SocialSigninSchema,
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+    },
+    async (request, reply) => {
+      const { idToken, rememberMe } = request.body as {
+        idToken: string;
+        rememberMe?: boolean;
+      };
+
+      let decoded: Awaited<ReturnType<typeof fastify.verifyFirebaseToken>>;
+      try {
+        decoded = await fastify.verifyFirebaseToken(idToken);
+      } catch {
+        return reply.code(401).send({ error: "Invalid or expired social login token." });
+      }
+
+      const { email, name, picture } = decoded;
+
+      if (!email) {
+        return reply.code(400).send({ error: "Social account has no email address." });
+      }
+
+      let user = await User.findOne({ email: email.toLowerCase() });
+
+      if (!user) {
+        user = await User.create({
+          name: name ?? email.split("@")[0],
+          email: email.toLowerCase(),
+          password: `__social__${decoded.uid}`,
+          isVerified: true,
+          verifiedAt: new Date(),
+          avatarUrl: picture ?? undefined,
+        });
+
+        mailer
+          .sendWelcome({ to: user.email, name: user.name })
+          .catch((err: Error) =>
+            request.log.error({ err }, "Failed to send welcome email for social sign-in"),
+          );
+      } else {
+        User.findByIdAndUpdate(user._id, { lastLoginAt: new Date() }).catch(
+          (err: Error) => request.log.error({ err }, "Failed to update lastLoginAt"),
+        );
+      }
+
+      const tokenExpiry = rememberMe ? TOKEN_EXPIRY_REMEMBER : TOKEN_EXPIRY_SESSION;
+      const token = fastify.jwt.sign(
+        { email: user.email },
+        { expiresIn: tokenExpiry },
+      );
+
+      const options = rememberMe
+        ? cookieOptions(THIRTY_DAYS_SECONDS)
+        : cookieOptions();
+
+      reply.setCookie(COOKIE_NAME, token, options);
+      return reply.code(200).send({ message: "Signed in successfully" });
+    },
+  );
+
+  fastify.post(
     ROUTES.FORGOT_PASSWORD,
     {
       schema: ForgotPasswordSchema,
@@ -433,7 +513,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       const { token } = request.query as { token: string };
 
       const user = await User.findOne({
-        verificationToken:       token,
+        verificationToken: token,
         verificationTokenExpiry: { $gt: new Date() },
       });
 
@@ -443,9 +523,9 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           .send({ error: "Verification link is invalid or has expired." });
       }
 
-      user.isVerified              = true;
-      user.verifiedAt              = new Date();
-      user.verificationToken       = undefined;
+      user.isVerified = true;
+      user.verifiedAt = new Date();
+      user.verificationToken = undefined;
       user.verificationTokenExpiry = undefined;
       await user.save();
 

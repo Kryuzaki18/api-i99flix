@@ -34,6 +34,7 @@
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
     "fastify-plugin": "^5.1.0",
+    "firebase-admin": "^13.10.0",
     "mongoose": "^9.6.2",
     "pm2": "^7.0.1",
     "resend": "^4.6.0",

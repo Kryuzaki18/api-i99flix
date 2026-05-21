@@ -11,6 +11,7 @@ import fastifySwaggerUi from "@fastify/swagger-ui";
 import appEnv from "./config/app-env.js";
 import { connectDB } from "./config/db.js";
 import appRoutes from "./routes/index.js";
+import firebaseAdmin from "./config/firebase.js";
 import { COOKIE_NAME } from "./constants/auth.constant.js";
 
 declare module "@fastify/jwt" {
@@ -90,6 +91,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await connectDB(app.config.MONGODB_URI);
 
+  await app.register(firebaseAdmin);
   await app.register(appRoutes);
 
   return app;
