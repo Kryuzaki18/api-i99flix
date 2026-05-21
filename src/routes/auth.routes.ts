@@ -54,11 +54,15 @@ const SignupSchema = {
 
 const MeSchema = {
   description:
-    "Returns the current authenticated session payload. Requires a valid session cookie.",
+    "Returns the current authenticated user's profile. Requires a valid session cookie.",
   tags: ["Authentication"],
   security: [{ cookieAuth: [] }],
   response: {
-    200: Type.Boolean(),
+    200: Type.Object({
+      name:      Type.String(),
+      email:     Type.String(),
+      avatarUrl: Type.Optional(Type.String()),
+    }),
     401: Type.Object({ error: Type.String() }),
     403: Type.Object({ error: Type.String() }),
   },
@@ -251,7 +255,11 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         if (!user.isVerified) {
           return reply.code(403).send({ error: "Email address not verified" });
         }
-        return reply.code(200).send(true);
+        return reply.code(200).send({
+          name:      user.name,
+          email:     user.email,
+          avatarUrl: user.avatarUrl ?? undefined,
+        });
       } else {
         return reply.code(401).send({ error: "Unauthorized" });
       }
