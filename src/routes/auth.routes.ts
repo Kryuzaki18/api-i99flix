@@ -59,8 +59,8 @@ const MeSchema = {
   security: [{ cookieAuth: [] }],
   response: {
     200: Type.Object({
-      name:      Type.String(),
-      email:     Type.String(),
+      name: Type.String(),
+      email: Type.String(),
       avatarUrl: Type.Optional(Type.String()),
     }),
     401: Type.Object({ error: Type.String() }),
@@ -100,7 +100,7 @@ const SignoutSchema = {
 
 const SocialSigninSchema = {
   description:
-    "Exchanges a Firebase ID token (from Google, Facebook, or X/Twitter OAuth) for a " +
+    "Exchanges a Firebase ID token (from Google or X/Twitter OAuth) for a " +
     "session cookie. Creates the user account on first sign-in (social accounts are " +
     "pre-verified). Accepts an optional rememberMe flag.",
   tags: ["Authentication"],
@@ -256,8 +256,8 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           return reply.code(403).send({ error: "Email address not verified" });
         }
         return reply.code(200).send({
-          name:      user.name,
-          email:     user.email,
+          name: user.name,
+          email: user.email,
           avatarUrl: user.avatarUrl ?? undefined,
         });
       } else {
