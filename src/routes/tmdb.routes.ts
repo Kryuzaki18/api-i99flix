@@ -48,7 +48,7 @@ const IdParam = Type.Object({
   id: Type.Number({ minimum: 1 }),
 });
 
-const tmdbRateLimit = { max: 30, timeWindow: "1 minute" };
+const tmdbRateLimit = { max: 50, timeWindow: "1 minute" };
 
 const MOVIE_TAG = ["TMDB — Movies"];
 const TV_TAG    = ["TMDB — TV Series"];
@@ -549,14 +549,12 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     schema: {
       description: "Get the list of official movie genres.",
       tags: SHARED_TAG,
-      security: [{ cookieAuth: [] }],
       querystring: Type.Object({
         language: Type.Optional(Type.String({ default: "en-US" })),
       }),
-      response: { 200: Type.Any(), 401: ErrorBody, 502: ErrorBody },
+      response: { 200: Type.Any(), 502: ErrorBody },
     },
-    config:     { rateLimit: tmdbRateLimit },
-    preHandler: [requireAuth],
+    config: { rateLimit: tmdbRateLimit },
   }, async (request, reply) => {
     try {
       const data = await tmdb.shared.genresMovie(request.query as Record<string, unknown>);
@@ -568,14 +566,12 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     schema: {
       description: "Get the list of official TV series genres.",
       tags: SHARED_TAG,
-      security: [{ cookieAuth: [] }],
       querystring: Type.Object({
         language: Type.Optional(Type.String({ default: "en-US" })),
       }),
-      response: { 200: Type.Any(), 401: ErrorBody, 502: ErrorBody },
+      response: { 200: Type.Any(), 502: ErrorBody },
     },
-    config:     { rateLimit: tmdbRateLimit },
-    preHandler: [requireAuth],
+    config: { rateLimit: tmdbRateLimit },
   }, async (request, reply) => {
     try {
       const data = await tmdb.shared.genresTv(request.query as Record<string, unknown>);
