@@ -1,5 +1,19 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+export interface IWatchlistItem {
+  movieId: string;
+  title: string;
+  description: string;
+  genre: string[];
+  rating: number;
+  year: number;
+  duration: string;
+  thumbnail: string;
+  backdrop: string;
+  mediaType?: "movie" | "tv";
+  addedAt: Date;
+}
+
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -12,6 +26,7 @@ export interface IUser extends Document {
   verificationTokenExpiry?: Date;
   resetToken?: string;
   resetTokenExpiry?: Date;
+  watchlist: IWatchlistItem[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,6 +85,24 @@ const UserSchema: Schema = new Schema(
     avatarUrl: {
       type: String,
       default: undefined,
+    },
+    watchlist: {
+      type: [
+        {
+          movieId:     { type: String, required: true },
+          title:       { type: String, required: true },
+          description: { type: String, default: "" },
+          genre:       { type: [String], default: [] },
+          rating:      { type: Number, default: 0 },
+          year:        { type: Number, default: 0 },
+          duration:    { type: String, default: "" },
+          thumbnail:   { type: String, default: "" },
+          backdrop:    { type: String, default: "" },
+          mediaType:   { type: String, enum: ["movie", "tv"], default: undefined },
+          addedAt:     { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
     },
   },
   { timestamps: true },

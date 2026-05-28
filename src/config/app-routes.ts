@@ -45,4 +45,7 @@ export const ROUTES = {
   TMDB_GENRES_TV:              "/tmdb/genres/tv",
 
   TMDB_SHOWCASE:               "/tmdb/showcase",
+
+  WATCHLIST:          "/watchlist",
+  WATCHLIST_ITEM:     "/watchlist/:movieId",
 };
