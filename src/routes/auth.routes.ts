@@ -184,9 +184,40 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         return reply.code(422).send({ error: "Invalid email address format" });
       }
 
-      const existingByEmail = await User.findOne({
-        email: email.toLowerCase().trim(),
-      }).lean();
+      const normalizedEmail    = email.toLowerCase().trim();
+      const normalizedName     = name.trim();
+      const hashedPassword     = await bcrypt.hash(password, SALT_ROUNDS);
+      const verificationToken  = crypto.randomBytes(32).toString("hex");
+      const verificationExpiry = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
+      const verifyUrl          = `${fastify.config.CLIENT_ORIGIN}/verify-email?token=${verificationToken}`;
+
+      const existingByEmail = await User.findOne({ email: normalizedEmail });
+
+      if (existingByEmail?.isDeleted) {
+        existingByEmail.name                    = normalizedName;
+        existingByEmail.password                = hashedPassword;
+        existingByEmail.isDeleted               = false;
+        existingByEmail.deletedAt               = undefined;
+        existingByEmail.isVerified              = false;
+        existingByEmail.verifiedAt              = undefined;
+        existingByEmail.verificationToken       = verificationToken;
+        existingByEmail.verificationTokenExpiry = verificationExpiry;
+        existingByEmail.resetToken              = undefined;
+        existingByEmail.resetTokenExpiry        = undefined;
+        existingByEmail.watchlist               = [];
+
+        await existingByEmail.save();
+
+        mailer
+          .sendVerificationEmail({ to: normalizedEmail, name: normalizedName, verifyUrl })
+          .catch((err: Error) =>
+            request.log.error({ err }, "Failed to send verification email on reactivation"),
+          );
+
+        return reply
+          .code(201)
+          .send({ message: "Account created. Please check your email to verify your account." });
+      }
 
       if (existingByEmail) {
         return reply
@@ -194,33 +225,19 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           .send({ error: "Email address is already taken", field: "email" });
       }
 
-      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-      const verificationToken = crypto.randomBytes(32).toString("hex");
-      const verificationExpiry = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
-
       try {
         await User.create({
-          name: name.trim(),
-          email: email.toLowerCase().trim(),
-          password: hashedPassword,
+          name:                    normalizedName,
+          email:                   normalizedEmail,
+          password:                hashedPassword,
           verificationToken,
           verificationTokenExpiry: verificationExpiry,
         });
 
-        const verifyUrl = `${fastify.config.CLIENT_ORIGIN}/verify-email?token=${verificationToken}`;
-
         mailer
-          .sendVerificationEmail({
-            to: email.toLowerCase().trim(),
-            name: name.trim(),
-            verifyUrl,
-          })
+          .sendVerificationEmail({ to: normalizedEmail, name: normalizedName, verifyUrl })
           .catch((err: Error) =>
-            request.log.error(
-              { err, message: err.message },
-              "Failed to send verification email",
-            ),
+            request.log.error({ err }, "Failed to send verification email"),
           );
 
         return reply
@@ -236,7 +253,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         }
         request.log.error(error);
         return reply.code(400).send({
-          error: error.message || "Failed to create account",
+          error:   error.message || "Failed to create account",
           details: error.errors,
         });
       }
