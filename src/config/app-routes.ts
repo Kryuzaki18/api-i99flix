@@ -48,4 +48,7 @@ export const ROUTES = {
 
   WATCHLIST:          "/watchlist",
   WATCHLIST_ITEM:     "/watchlist/:movieId",
+
+  CHANGE_PASSWORD:    "/change-password",
+  DELETE_ACCOUNT:     "/account",
 };

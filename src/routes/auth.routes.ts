@@ -59,9 +59,10 @@ const MeSchema = {
   security: [{ cookieAuth: [] }],
   response: {
     200: Type.Object({
-      name: Type.String(),
-      email: Type.String(),
+      name:     Type.String(),
+      email:    Type.String(),
       avatarUrl: Type.Optional(Type.String()),
+      isSocial: Type.Boolean(),
     }),
     401: Type.Object({ error: Type.String() }),
     403: Type.Object({ error: Type.String() }),
@@ -252,13 +253,17 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         if (!user) {
           return reply.code(401).send({ error: "Session expired or invalid" });
         }
+        if (user.isDeleted) {
+          return reply.code(401).send({ error: "This account has been deleted." });
+        }
         if (!user.isVerified) {
           return reply.code(403).send({ error: "Email address not verified" });
         }
         return reply.code(200).send({
-          name: user.name,
-          email: user.email,
+          name:      user.name,
+          email:     user.email,
           avatarUrl: user.avatarUrl ?? undefined,
+          isSocial:  user.password.startsWith("__social__"),
         });
       } else {
         return reply.code(401).send({ error: "Unauthorized" });
@@ -302,6 +307,14 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         if (!user || !isPasswordValid) {
           return reply.code(400).send({ error: "Invalid email or password" });
+        }
+
+        if (user.password.startsWith("__social__")) {
+          return reply.code(400).send({ error: "This account uses social sign-in. Please continue with Google or X." });
+        }
+
+        if (user.isDeleted) {
+          return reply.code(401).send({ error: "This account has been deleted." });
         }
 
         if (!user.isVerified) {
@@ -374,6 +387,10 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
       let user = await User.findOne({ email: email.toLowerCase() });
 
+      if (user && !user.password.startsWith("__social__")) {
+        return reply.code(400).send({ error: "This email is registered with a password account. Please sign in with your email and password." });
+      }
+
       if (!user) {
         user = await User.create({
           name: name ?? email.split("@")[0],
@@ -425,33 +442,34 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
       const user = await User.findOne({ email: email.toLowerCase().trim() });
 
-      if (user) {
-        const token = crypto.randomBytes(32).toString("hex");
-        const expiry = new Date(Date.now() + RESET_TOKEN_TTL_MS);
-
-        user.resetToken = token;
-        user.resetTokenExpiry = expiry;
-        await user.save();
-
-        const resetUrl = `${fastify.config.CLIENT_ORIGIN}/reset-password?token=${token}`;
-
-        mailer
-          .sendPasswordReset({
-            to: user.email,
-            name: user.name,
-            resetUrl,
-          })
-          .catch((err: Error) =>
-            request.log.error(
-              { err, message: err.message },
-              "Failed to send password reset email",
-            ),
-          );
+      if (!user || user.isDeleted) {
+        return reply.code(400).send({ error: "Account not found or has been deleted." });
       }
 
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiry = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+
+      user.resetToken = token;
+      user.resetTokenExpiry = expiry;
+      await user.save();
+
+      const resetUrl = `${fastify.config.CLIENT_ORIGIN}/reset-password?token=${token}`;
+
+      mailer
+        .sendPasswordReset({
+          to: user.email,
+          name: user.name,
+          resetUrl,
+        })
+        .catch((err: Error) =>
+          request.log.error(
+            { err, message: err.message },
+            "Failed to send password reset email",
+          ),
+        );
+
       return reply.code(200).send({
-        message:
-          "If an account with that email exists, a password reset link has been sent.",
+        message: "If an account with that email exists, a password reset link has been sent.",
       });
     },
   );
@@ -471,6 +489,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       const user = await User.findOne({
         resetToken: token,
         resetTokenExpiry: { $gt: new Date() },
+        isDeleted: { $ne: true },
       });
 
       if (!user) {
@@ -523,6 +542,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       const user = await User.findOne({
         verificationToken: token,
         verificationTokenExpiry: { $gt: new Date() },
+        isDeleted: { $ne: true },
       });
 
       if (!user) {

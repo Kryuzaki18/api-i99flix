@@ -26,9 +26,11 @@ export interface IUser extends Document {
   verificationTokenExpiry?: Date;
   resetToken?: string;
   resetTokenExpiry?: Date;
-  watchlist: IWatchlistItem[];
-  createdAt: Date;
-  updatedAt: Date;
+  watchlist:   IWatchlistItem[];
+  isDeleted:   boolean;
+  deletedAt?:  Date;
+  createdAt:   Date;
+  updatedAt:   Date;
 }
 
 const UserSchema: Schema = new Schema(
@@ -103,6 +105,14 @@ const UserSchema: Schema = new Schema(
         },
       ],
       default: [],
+    },
+    isDeleted: {
+      type:    Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type:    Date,
+      default: undefined,
     },
   },
   { timestamps: true },
