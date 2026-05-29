@@ -8,8 +8,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
 const TEMPLATES  = join(__dirname, "../templates");
 
+const baseStyles = readFileSync(join(TEMPLATES, "base.styles.css"), "utf-8");
+
 function loadTemplate(filename: string): string {
-  return readFileSync(join(TEMPLATES, filename), "utf-8");
+  return readFileSync(join(TEMPLATES, filename), "utf-8")
+    .replaceAll("{{BASE_STYLES}}", baseStyles);
 }
 
 function render(template: string, vars: Record<string, string>): string {
