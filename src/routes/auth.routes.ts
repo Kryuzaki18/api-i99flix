@@ -167,6 +167,36 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
   const mailer = createEmailService(fastify.config);
 
+  fastify.get(ROUTES.ME, { schema: MeSchema }, async (request, reply) => {
+    try {
+      await request.jwtVerify();
+      const { email } = request.user;
+
+      if (email) {
+        const user = await User.findOne({ email }).lean();
+        if (!user) {
+          return reply.code(401).send({ error: "Session expired or invalid" });
+        }
+        if (user.isDeleted) {
+          return reply.code(401).send({ error: "This account has been deleted." });
+        }
+        if (!user.isVerified) {
+          return reply.code(403).send({ error: "Email address not verified" });
+        }
+        return reply.code(200).send({
+          name:      user.name,
+          email:     user.email,
+          avatarUrl: user.avatarUrl ?? undefined,
+          isSocial:  user.password.startsWith("__social__"),
+        });
+      } else {
+        return reply.code(401).send({ error: "Unauthorized" });
+      }
+    } catch {
+      return reply.code(401).send({ error: "Unauthorized" });
+    }
+  });
+
   fastify.post(
     ROUTES.SIGNUP,
     {
@@ -260,36 +290,6 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
   );
 
-  fastify.get(ROUTES.ME, { schema: MeSchema }, async (request, reply) => {
-    try {
-      await request.jwtVerify();
-      const { email } = request.user;
-
-      if (email) {
-        const user = await User.findOne({ email }).lean();
-        if (!user) {
-          return reply.code(401).send({ error: "Session expired or invalid" });
-        }
-        if (user.isDeleted) {
-          return reply.code(401).send({ error: "This account has been deleted." });
-        }
-        if (!user.isVerified) {
-          return reply.code(403).send({ error: "Email address not verified" });
-        }
-        return reply.code(200).send({
-          name:      user.name,
-          email:     user.email,
-          avatarUrl: user.avatarUrl ?? undefined,
-          isSocial:  user.password.startsWith("__social__"),
-        });
-      } else {
-        return reply.code(401).send({ error: "Unauthorized" });
-      }
-    } catch {
-      return reply.code(401).send({ error: "Unauthorized" });
-    }
-  });
-
   fastify.post(
     ROUTES.SIGNIN,
     {
@@ -381,7 +381,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     ROUTES.SOCIAL_SIGNIN,
     {
       schema: SocialSigninSchema,
-      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     },
     async (request, reply) => {
       const { idToken, rememberMe } = request.body as {
@@ -495,7 +495,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     ROUTES.RESET_PASSWORD,
     {
       schema: ResetPasswordSchema,
-      config: { rateLimit: { max: 10, timeWindow: "15 minutes" } },
+      config: { rateLimit: { max: 5, timeWindow: "15 minutes" } },
     },
     async (request, reply) => {
       const { token, password } = request.body as {
@@ -551,7 +551,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     ROUTES.VERIFY_EMAIL,
     {
       schema: VerifyEmailSchema,
-      config: { rateLimit: { max: 10, timeWindow: "15 minutes" } },
+      config: { rateLimit: { max: 5, timeWindow: "15 minutes" } },
     },
     async (request, reply) => {
       const { token } = request.query as { token: string };
