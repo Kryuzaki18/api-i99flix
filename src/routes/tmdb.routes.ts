@@ -67,6 +67,28 @@ function pickParams(
   return out;
 }
 
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+type TmdbListResponse = { results: Record<string, unknown>[]; [k: string]: unknown };
+
+function filterFutureMovies(data: TmdbListResponse): TmdbListResponse {
+  const t = todayIso();
+  return { ...data, results: data.results.filter((m) => m["release_date"] && (m["release_date"] as string) <= t) };
+}
+
+function filterFutureTv(data: TmdbListResponse): TmdbListResponse {
+  const t = todayIso();
+  return { ...data, results: data.results.filter((m) => m["first_air_date"] && (m["first_air_date"] as string) <= t) };
+}
+
+function capDateLte(query: Record<string, unknown>, field: string): Record<string, unknown> {
+  const t = todayIso();
+  const clientLte = query[field] as string | undefined;
+  return { ...query, [field]: clientLte && clientLte < t ? clientLte : t };
+}
+
 const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   const tmdb = createTmdbService(fastify.config.TMDB_KEY);
 
@@ -128,8 +150,8 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     preHandler: [requireAuth],
   }, async (request, reply) => {
     try {
-      const data = await tmdb.movies.topRated(request.query as Record<string, unknown>);
-      return reply.send(data);
+      const data = await tmdb.movies.topRated(request.query as Record<string, unknown>) as TmdbListResponse;
+      return reply.send(filterFutureMovies(data));
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
@@ -145,8 +167,8 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     preHandler: [requireAuth],
   }, async (request, reply) => {
     try {
-      const data = await tmdb.movies.nowPlaying(request.query as Record<string, unknown>);
-      return reply.send(data);
+      const data = await tmdb.movies.nowPlaying(request.query as Record<string, unknown>) as TmdbListResponse;
+      return reply.send(filterFutureMovies(data));
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
@@ -179,8 +201,8 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     preHandler: [requireAuth],
   }, async (request, reply) => {
     try {
-      const data = await tmdb.movies.trending(request.query as Record<string, unknown>);
-      return reply.send(data);
+      const data = await tmdb.movies.trending(request.query as Record<string, unknown>) as TmdbListResponse;
+      return reply.send(filterFutureMovies(data));
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
@@ -196,7 +218,8 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     preHandler: [requireAuth],
   }, async (request, reply) => {
     try {
-      const data = await tmdb.movies.discover(request.query as Record<string, unknown>);
+      const params = capDateLte(request.query as Record<string, unknown>, "primary_release_date.lte");
+      const data = await tmdb.movies.discover(params);
       return reply.send(data);
     } catch (e) { return handleTmdbError(e, reply); }
   });
@@ -216,8 +239,8 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       const q = request.query as { query: string; page?: number; language?: string };
       const data = await tmdb.movies.search(
         pickParams(q as Record<string, unknown>, "query", "page", "language"),
-      );
-      return reply.send(data);
+      ) as TmdbListResponse;
+      return reply.send(filterFutureMovies(data));
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
@@ -393,8 +416,8 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     preHandler: [requireAuth],
   }, async (request, reply) => {
     try {
-      const data = await tmdb.tv.trending(request.query as Record<string, unknown>);
-      return reply.send(data);
+      const data = await tmdb.tv.trending(request.query as Record<string, unknown>) as TmdbListResponse;
+      return reply.send(filterFutureTv(data));
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
@@ -410,7 +433,8 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     preHandler: [requireAuth],
   }, async (request, reply) => {
     try {
-      const data = await tmdb.tv.discover(request.query as Record<string, unknown>);
+      const params = capDateLte(request.query as Record<string, unknown>, "first_air_date.lte");
+      const data = await tmdb.tv.discover(params);
       return reply.send(data);
     } catch (e) { return handleTmdbError(e, reply); }
   });
@@ -430,8 +454,8 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       const q = request.query as { query: string; page?: number; language?: string };
       const data = await tmdb.tv.search(
         pickParams(q as Record<string, unknown>, "query", "page", "language"),
-      );
-      return reply.send(data);
+      ) as TmdbListResponse;
+      return reply.send(filterFutureTv(data));
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
