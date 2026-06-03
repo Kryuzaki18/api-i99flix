@@ -1,5 +1,4 @@
 export const ROUTES = {
-
   HEALTH: "/health",
 
   SIGNUP:          "/signup",
@@ -10,6 +9,11 @@ export const ROUTES = {
   FORGOT_PASSWORD: "/forgot-password",
   RESET_PASSWORD:  "/reset-password",
   VERIFY_EMAIL:    "/verify-email",
+  CHANGE_PASSWORD:    "/change-password",
+  DELETE_ACCOUNT:     "/account",
+  
+  WATCHLIST:          "/watchlist",
+  WATCHLIST_ITEM:     "/watchlist/:movieId",
 
   MOVIES:      "/movies",       
   MOVIE_BY_ID: "/movies/:id",  
@@ -44,11 +48,5 @@ export const ROUTES = {
   TMDB_GENRES_MOVIE:           "/tmdb/genres/movie",
   TMDB_GENRES_TV:              "/tmdb/genres/tv",
 
-  TMDB_SHOWCASE:               "/tmdb/showcase",
-
-  WATCHLIST:          "/watchlist",
-  WATCHLIST_ITEM:     "/watchlist/:movieId",
-
-  CHANGE_PASSWORD:    "/change-password",
-  DELETE_ACCOUNT:     "/account",
+  TMDB_SHOWCASE:               "/tmdb/showcase"
 };

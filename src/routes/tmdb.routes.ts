@@ -7,6 +7,8 @@ import { requireAuth }       from "../hooks/auth.hook.js";
 import { createTmdbService } from "../services/tmdb.service.js";
 import { ErrorBody }         from "../schemas/shared.schema.js";
 
+import { ROUTES } from "../config/app-routes.js";
+
 const PageQuery = Type.Object({
   page:     Type.Optional(Type.Number({ minimum: 1, default: 1 })),
   language: Type.Optional(Type.String({ default: "en-US" })),
@@ -79,7 +81,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     });
   }
 
-  fastify.get("/tmdb/showcase", {
+  fastify.get(ROUTES.TMDB_SHOWCASE, {
     schema: {
       description: "Public endpoint — returns trending movies for the login/signup page showcase. No authentication required.",
       tags: ["TMDB — Public"],
@@ -97,7 +99,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/popular", {
+  fastify.get(ROUTES.TMDB_MOVIES_POPULAR, {
     schema: {
       description: "Get a list of movies ordered by popularity.",
       tags: MOVIE_TAG,
@@ -114,7 +116,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/top-rated", {
+  fastify.get(ROUTES.TMDB_MOVIES_TOP_RATED, {
     schema: {
       description: "Get a list of movies ordered by rating.",
       tags: MOVIE_TAG,
@@ -131,7 +133,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/now-playing", {
+  fastify.get(ROUTES.TMDB_MOVIES_NOW_PLAYING, {
     schema: {
       description: "Get a list of movies currently in theatres.",
       tags: MOVIE_TAG,
@@ -148,7 +150,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/upcoming", {
+  fastify.get(ROUTES.TMDB_MOVIES_UPCOMING, {
     schema: {
       description: "Get a list of movies that are being released soon.",
       tags: MOVIE_TAG,
@@ -165,7 +167,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/trending", {
+  fastify.get(ROUTES.TMDB_MOVIES_TRENDING, {
     schema: {
       description: "Get the weekly trending movies.",
       tags: MOVIE_TAG,
@@ -182,7 +184,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/discover", {
+  fastify.get(ROUTES.TMDB_MOVIES_DISCOVER, {
     schema: {
       description: "Discover movies by different types of data like average rating, number of votes, genres and certifications.",
       tags: MOVIE_TAG,
@@ -199,7 +201,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/search", {
+  fastify.get(ROUTES.TMDB_MOVIES_SEARCH, {
     schema: {
       description: "Search for movies by title.",
       tags: MOVIE_TAG,
@@ -219,7 +221,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/:id", {
+  fastify.get(ROUTES.TMDB_MOVIE_BY_ID, {
     schema: {
       description: "Get the primary information about a movie.",
       tags: MOVIE_TAG,
@@ -237,7 +239,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/:id/videos", {
+  fastify.get(ROUTES.TMDB_MOVIE_VIDEOS, {
     schema: {
       description: "Get the videos (trailers, teasers, etc.) for a movie.",
       tags: MOVIE_TAG,
@@ -255,7 +257,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/:id/credits", {
+  fastify.get(ROUTES.TMDB_MOVIE_CREDITS, {
     schema: {
       description: "Get the cast and crew for a movie.",
       tags: MOVIE_TAG,
@@ -273,7 +275,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/:id/similar", {
+  fastify.get(ROUTES.TMDB_MOVIE_SIMILAR, {
     schema: {
       description: "Get a list of similar movies.",
       tags: MOVIE_TAG,
@@ -292,7 +294,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/movies/:id/recommendations", {
+  fastify.get(ROUTES.TMDB_MOVIE_RECOMMENDATIONS, {
     schema: {
       description: "Get a list of recommended movies for a movie.",
       tags: MOVIE_TAG,
@@ -311,7 +313,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/popular", {
+  fastify.get(ROUTES.TMDB_TV_POPULAR, {
     schema: {
       description: "Get a list of TV series ordered by popularity.",
       tags: TV_TAG,
@@ -328,7 +330,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/top-rated", {
+  fastify.get(ROUTES.TMDB_TV_TOP_RATED, {
     schema: {
       description: "Get a list of TV series ordered by rating.",
       tags: TV_TAG,
@@ -345,7 +347,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/on-the-air", {
+  fastify.get(ROUTES.TMDB_TV_ON_THE_AIR, {
     schema: {
       description: "Get a list of TV series that air in the next 7 days.",
       tags: TV_TAG,
@@ -362,7 +364,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/airing-today", {
+  fastify.get(ROUTES.TMDB_TV_AIRING_TODAY, {
     schema: {
       description: "Get a list of TV series that are airing today.",
       tags: TV_TAG,
@@ -379,7 +381,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/trending", {
+  fastify.get(ROUTES.TMDB_TV_TRENDING, {
     schema: {
       description: "Get the weekly trending TV series.",
       tags: TV_TAG,
@@ -396,7 +398,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/discover", {
+  fastify.get(ROUTES.TMDB_TV_DISCOVER, {
     schema: {
       description: "Discover TV series by different types of data.",
       tags: TV_TAG,
@@ -413,7 +415,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/search", {
+  fastify.get(ROUTES.TMDB_TV_SEARCH, {
     schema: {
       description: "Search for TV series by name.",
       tags: TV_TAG,
@@ -433,7 +435,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/:id", {
+  fastify.get(ROUTES.TMDB_TV_BY_ID, {
     schema: {
       description: "Get the primary information about a TV series.",
       tags: TV_TAG,
@@ -451,7 +453,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/:id/videos", {
+  fastify.get(ROUTES.TMDB_TV_VIDEOS, {
     schema: {
       description: "Get the videos (trailers, teasers, etc.) for a TV series.",
       tags: TV_TAG,
@@ -469,7 +471,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/:id/credits", {
+  fastify.get(ROUTES.TMDB_TV_CREDITS, {
     schema: {
       description: "Get the cast and crew for a TV series.",
       tags: TV_TAG,
@@ -487,7 +489,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/:id/similar", {
+  fastify.get(ROUTES.TMDB_TV_SIMILAR, {
     schema: {
       description: "Get a list of similar TV series.",
       tags: TV_TAG,
@@ -506,7 +508,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/tv/:id/recommendations", {
+  fastify.get(ROUTES.TMDB_TV_RECOMMENDATIONS, {
     schema: {
       description: "Get a list of recommended TV series.",
       tags: TV_TAG,
@@ -525,7 +527,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/search", {
+  fastify.get(ROUTES.TMDB_SEARCH_MULTI, {
     schema: {
       description: "Search across movies, TV series, and people in a single request.",
       tags: SHARED_TAG,
@@ -545,7 +547,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/genres/movie", {
+  fastify.get(ROUTES.TMDB_GENRES_MOVIE, {
     schema: {
       description: "Get the list of official movie genres.",
       tags: SHARED_TAG,
@@ -562,7 +564,7 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
-  fastify.get("/tmdb/genres/tv", {
+  fastify.get(ROUTES.TMDB_GENRES_TV, {
     schema: {
       description: "Get the list of official TV series genres.",
       tags: SHARED_TAG,
