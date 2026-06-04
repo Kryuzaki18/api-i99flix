@@ -1,19 +1,20 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IMovie extends Document {
-  title:       string;
-  description: string;
-  genre:       string[];
-  rating:      number;
-  year:        number;
-  duration:    string;
-  thumbnail:   string;
-  backdrop:    string;
-  featured:    boolean;
-  trending:    boolean;
-  newRelease:  boolean;
-  createdAt:   Date;
-  updatedAt:   Date;
+  title:         string;
+  originalTitle: string;
+  description:   string;
+  genre:         string[];
+  rating:        number;
+  year:          number;
+  duration:      string;
+  thumbnail:     string;
+  backdrop:      string;
+  featured:      boolean;
+  trending:      boolean;
+  newRelease:    boolean;
+  createdAt:     Date;
+  updatedAt:     Date;
 }
 
 const MovieSchema: Schema = new Schema(
@@ -24,6 +25,12 @@ const MovieSchema: Schema = new Schema(
       trim:      true,
       minlength: [1,   "Title must not be empty"],
       maxlength: [200, "Title must be at most 200 characters"],
+    },
+    originalTitle: {
+      type:      String,
+      default:   "",
+      trim:      true,
+      maxlength: [200, "Original title must be at most 200 characters"],
     },
     description: {
       type:      String,
@@ -73,7 +80,7 @@ const MovieSchema: Schema = new Schema(
   { timestamps: true },
 );
 
-MovieSchema.index({ title: "text", description: "text" }); 
+MovieSchema.index({ title: "text", originalTitle: "text", description: "text" });
 MovieSchema.index({ genre: 1 });
 MovieSchema.index({ year: 1 });
 MovieSchema.index({ rating: -1 });
