@@ -12,6 +12,7 @@ const WatchlistItemSchema = Type.Object({
   genre:       Type.Array(Type.String()),
   rating:      Type.Number(),
   year:        Type.Number(),
+  releaseDate: Type.Optional(Type.String()),
   duration:    Type.String(),
   thumbnail:   Type.String(),
   backdrop:    Type.String(),
@@ -40,6 +41,7 @@ const AddWatchlistSchema = {
     genre:       Type.Optional(Type.Array(Type.String())),
     rating:      Type.Optional(Type.Number()),
     year:        Type.Optional(Type.Number()),
+    releaseDate: Type.Optional(Type.String()),
     duration:    Type.Optional(Type.String()),
     thumbnail:   Type.Optional(Type.String()),
     backdrop:    Type.Optional(Type.String()),
@@ -80,10 +82,16 @@ const watchlistRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         const user = await User.findOne({ email }).select("watchlist").lean();
         if (!user) return reply.code(401).send({ error: "Unauthorized" });
 
-        const watchlist = (user.watchlist ?? []).map((item) => ({
-          ...item,
-          addedAt: (item.addedAt as Date).toISOString(),
-        }));
+        const today = new Date().toISOString().slice(0, 10);
+        const watchlist = (user.watchlist ?? [])
+          .filter((item) => {
+            if (item.releaseDate) return item.releaseDate <= today;
+            return !item.year || item.year <= new Date().getFullYear();
+          })
+          .map((item) => ({
+            ...item,
+            addedAt: (item.addedAt as Date).toISOString(),
+          }));
 
         return reply.code(200).send({ watchlist });
       } catch {
@@ -107,11 +115,20 @@ const watchlistRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           genre?: string[];
           rating?: number;
           year?: number;
+          releaseDate?: string;
           duration?: string;
           thumbnail?: string;
           backdrop?: string;
           mediaType?: "movie" | "tv";
         };
+
+        const today = new Date().toISOString().slice(0, 10);
+        if (body.releaseDate && body.releaseDate > today) {
+          return reply.code(400).send({ error: "Cannot add unreleased content to watchlist" });
+        }
+        if (!body.releaseDate && body.year && body.year > new Date().getFullYear()) {
+          return reply.code(400).send({ error: "Cannot add unreleased content to watchlist" });
+        }
 
         const user = await User.findOne({ email });
         if (!user) return reply.code(401).send({ error: "Unauthorized" });
@@ -128,6 +145,7 @@ const watchlistRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           genre:       body.genre ?? [],
           rating:      body.rating ?? 0,
           year:        body.year ?? 0,
+          releaseDate: body.releaseDate,
           duration:    body.duration ?? "",
           thumbnail:   body.thumbnail ?? "",
           backdrop:    body.backdrop ?? "",
@@ -144,6 +162,7 @@ const watchlistRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           genre:       item.genre,
           rating:      item.rating,
           year:        item.year,
+          releaseDate: item.releaseDate,
           duration:    item.duration,
           thumbnail:   item.thumbnail,
           backdrop:    item.backdrop,
@@ -185,6 +204,7 @@ const watchlistRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           genre:       item.genre,
           rating:      item.rating,
           year:        item.year,
+          releaseDate: item.releaseDate,
           duration:    item.duration,
           thumbnail:   item.thumbnail,
           backdrop:    item.backdrop,

@@ -7,6 +7,7 @@ export interface IWatchlistItem {
   genre: string[];
   rating: number;
   year: number;
+  releaseDate?: string;
   duration: string;
   thumbnail: string;
   backdrop: string;
@@ -97,6 +98,7 @@ const UserSchema: Schema = new Schema(
           genre:       { type: [String], default: [] },
           rating:      { type: Number, default: 0 },
           year:        { type: Number, default: 0 },
+          releaseDate: { type: String, default: undefined },
           duration:    { type: String, default: "" },
           thumbnail:   { type: String, default: "" },
           backdrop:    { type: String, default: "" },
