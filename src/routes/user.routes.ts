@@ -8,11 +8,11 @@ import { SALT_ROUNDS, COOKIE_NAME } from "../constants/auth.constant.js";
 import User from "../schemas/users.schema.js";
 
 const ChangePasswordSchema = {
-  description: "Changes the authenticated user's password. Requires the current password for verification.",
+  description: "Changes or sets the authenticated user's password. Social users setting a password for the first time do not need to provide oldPassword.",
   tags: ["User"],
   security: [{ cookieAuth: [] }],
   body: Type.Object({
-    oldPassword: Type.String({ minLength: 1 }),
+    oldPassword: Type.Optional(Type.String({ minLength: 1 })),
     newPassword: Type.String({ minLength: 7 }),
   }),
   response: {
@@ -23,11 +23,11 @@ const ChangePasswordSchema = {
 };
 
 const DeleteAccountSchema = {
-  description: "Permanently deletes the authenticated user's account after password confirmation.",
+  description: "Permanently deletes the authenticated user's account. Password required unless the account has no password set.",
   tags: ["User"],
   security: [{ cookieAuth: [] }],
   body: Type.Object({
-    password: Type.String({ minLength: 1 }),
+    password: Type.Optional(Type.String()),
   }),
   response: {
     200: Type.Object({ message: Type.String() }),
@@ -46,29 +46,26 @@ const userRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         await request.jwtVerify();
         const { email } = request.user;
         const { oldPassword, newPassword } = request.body as {
-          oldPassword: string;
+          oldPassword?: string;
           newPassword: string;
         };
 
         const user = await User.findOne({ email });
         if (!user) return reply.code(401).send({ error: "Unauthorized" });
 
-        const isSocialAccount = user.password.startsWith("__social__");
-        if (isSocialAccount) {
-          return reply.code(400).send({
-            error: "Social sign-in accounts cannot change their password here.",
-          });
-        }
+        const settingFirstPassword = user.password.startsWith("__social__");
 
-        const isMatch = await bcrypt.compare(oldPassword, user.password);
-        if (!isMatch) {
-          return reply.code(400).send({ error: "Current password is incorrect." });
-        }
-
-        if (oldPassword === newPassword) {
-          return reply.code(400).send({
-            error: "New password must be different from your current password.",
-          });
+        if (!settingFirstPassword) {
+          if (!oldPassword) {
+            return reply.code(400).send({ error: "Current password is required." });
+          }
+          const isMatch = await bcrypt.compare(oldPassword, user.password);
+          if (!isMatch) {
+            return reply.code(400).send({ error: "Current password is incorrect." });
+          }
+          if (oldPassword === newPassword) {
+            return reply.code(400).send({ error: "New password must be different from your current password." });
+          }
         }
 
         user.password = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -88,14 +85,17 @@ const userRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       try {
         await request.jwtVerify();
         const { email } = request.user;
-        const { password } = request.body as { password: string };
+        const { password } = request.body as { password?: string };
 
         const user = await User.findOne({ email });
         if (!user) return reply.code(401).send({ error: "Unauthorized" });
 
-        const isSocialAccount = user.password.startsWith("__social__");
+        const hasRealPassword = !user.password.startsWith("__social__");
 
-        if (!isSocialAccount) {
+        if (hasRealPassword) {
+          if (!password) {
+            return reply.code(400).send({ error: "Password is required to delete your account." });
+          }
           const isMatch = await bcrypt.compare(password, user.password);
           if (!isMatch) {
             return reply.code(400).send({ error: "Password is incorrect." });

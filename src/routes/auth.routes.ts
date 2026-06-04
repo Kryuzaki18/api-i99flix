@@ -60,10 +60,11 @@ const MeSchema = {
   security: [{ cookieAuth: [] }],
   response: {
     200: Type.Object({
-      name:     Type.String(),
-      email:    Type.String(),
-      avatarUrl: Type.Optional(Type.String()),
-      isSocial: Type.Boolean(),
+      name:        Type.String(),
+      email:       Type.String(),
+      avatarUrl:   Type.Optional(Type.String()),
+      social:      Type.Array(Type.String()),
+      hasPassword: Type.Boolean(),
     }),
     401: Type.Object({ error: Type.String() }),
     403: Type.Object({ error: Type.String() }),
@@ -185,10 +186,11 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           return reply.code(403).send({ error: "Email address not verified" });
         }
         return reply.code(200).send({
-          name:      user.name,
-          email:     user.email,
-          avatarUrl: user.avatarUrl ?? undefined,
-          isSocial:  user.password.startsWith("__social__"),
+          name:        user.name,
+          email:       user.email,
+          avatarUrl:   user.avatarUrl ?? undefined,
+          social:      user.social ?? [],
+          hasPassword: !user.password.startsWith("__social__"),
         });
       } else {
         return reply.code(401).send({ error: "Unauthorized" });
@@ -227,6 +229,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       if (existingByEmail?.isDeleted) {
         existingByEmail.name                    = normalizedName;
         existingByEmail.password                = hashedPassword;
+        existingByEmail.social                  = [];
         existingByEmail.isDeleted               = false;
         existingByEmail.deletedAt               = undefined;
         existingByEmail.isVerified              = false;
@@ -328,7 +331,10 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         }
 
         if (user.password.startsWith("__social__")) {
-          return reply.code(400).send({ error: "This account uses social sign-in. Please continue with Google or X." });
+          const providers = (user.social ?? []).map((p: string) => p === 'x' ? 'X' : 'Google').join(' or ');
+          return reply.code(400).send({
+            error: `This account uses social sign-in${providers ? ` via ${providers}` : ''}. Sign in with your social account or use "Forgot password" to set a password.`,
+          });
         }
 
         if (user.isDeleted) {
@@ -403,9 +409,12 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         return reply.code(400).send({ error: "Social account has no email address." });
       }
 
+      const signInProvider = decoded.firebase?.sign_in_provider ?? '';
+      const provider: 'google' | 'x' = signInProvider.includes('twitter') ? 'x' : 'google';
+
       let user = await User.findOne({ email: email.toLowerCase() });
 
-      if (user && !user.password.startsWith("__social__")) {
+      if (user && (user.social ?? []).length === 0) {
         return reply.code(400).send({ error: "This email is registered with a password account. Please sign in with your email and password." });
       }
 
@@ -414,6 +423,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           name: name ?? email.split("@")[0],
           email: email.toLowerCase(),
           password: `__social__${decoded.uid}`,
+          social: [provider],
           isVerified: true,
           verifiedAt: new Date(),
           avatarUrl: picture ?? undefined,
@@ -425,6 +435,10 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             request.log.error({ err }, "Failed to send welcome email for social sign-in"),
           );
       } else {
+        if (!(user.social ?? []).includes(provider)) {
+          user.social = [...(user.social ?? []), provider];
+          await user.save();
+        }
         User.findByIdAndUpdate(user._id, { lastLoginAt: new Date() }).catch(
           (err: Error) => request.log.error({ err }, "Failed to update lastLoginAt"),
         );

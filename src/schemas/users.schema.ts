@@ -19,6 +19,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
+  social: string[];
   isVerified: boolean;
   verifiedAt?: Date;
   lastLoginAt?: Date;
@@ -84,6 +85,10 @@ const UserSchema: Schema = new Schema(
     resetTokenExpiry: {
       type: Date,
       default: undefined,
+    },
+    social: {
+      type: [{ type: String, enum: ['google', 'x'] }],
+      default: [],
     },
     avatarUrl: {
       type: String,
