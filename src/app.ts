@@ -32,25 +32,42 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(fastifyCors, {
     origin: (origin, cb) => {
-      const allowed = app.config.CLIENT_ORIGIN
-        .split(',')
+      const allowed = app.config.CLIENT_ORIGIN.split(",")
         .map((o) => o.trim())
         .filter(Boolean);
 
-      if (!origin || allowed.includes(origin)) {
+      const isAllowed =
+        !origin ||
+        allowed.some((entry) => {
+          if (origin === entry) return true;
+          try {
+            const entryUrl = new URL(entry);
+            const originUrl = new URL(origin);
+            return (
+              entryUrl.protocol === originUrl.protocol &&
+              (originUrl.hostname === entryUrl.hostname ||
+                originUrl.hostname === `www.${entryUrl.hostname}` ||
+                `www.${originUrl.hostname}` === entryUrl.hostname)
+            );
+          } catch {
+            return false;
+          }
+        });
+
+      if (isAllowed) {
         cb(null, true);
       } else {
         cb(new Error(`CORS: origin "${origin}" not allowed`), false);
       }
     },
-    methods:        ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     exposedHeaders: ["Set-Cookie"],
-    credentials:    true,
+    credentials: true,
   });
 
   await app.register(fastifyCookie, {
-    hook:         "onRequest",
+    hook: "onRequest",
     parseOptions: {},
   });
 
@@ -58,27 +75,27 @@ export async function buildApp(): Promise<FastifyInstance> {
     secret: app.config.JWT_SECRET,
     cookie: {
       cookieName: COOKIE_NAME,
-      signed:     false,
+      signed: false,
     },
   });
 
   await app.register(fastifySwagger, {
     openapi: {
       info: {
-        title:       "i99flix API",
+        title: "i99flix API",
         description: "REST API for the i99flix movie streaming platform",
-        version:     "1.0.0",
+        version: "1.0.0",
       },
       components: {
         securitySchemes: {
           bearerAuth: {
-            type:         "http",
-            scheme:       "bearer",
+            type: "http",
+            scheme: "bearer",
             bearerFormat: "JWT",
           },
           cookieAuth: {
             type: "apiKey",
-            in:   "cookie",
+            in: "cookie",
             name: COOKIE_NAME,
           },
         },
