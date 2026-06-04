@@ -4,7 +4,7 @@ import { Type } from "@sinclair/typebox";
 import { ROUTES } from "../config/app-routes.js";
 import { ErrorBody } from "../schemas/shared.schema.js";
 import User from "../schemas/users.schema.js";
-import WatchHistory from "../schemas/watchHistory.schema.js";
+import WatchHistory, { type IWatchEntry } from "../schemas/watchHistory.schema.js";
 
 const WatchEpisodeSchema = Type.Object({
   _id:       Type.String(),
@@ -29,6 +29,7 @@ const GetWatchHistorySchema = {
   response: {
     200: Type.Object({ history: Type.Array(WatchEntrySchema) }),
     401: Type.Object({ error: Type.String() }),
+    500: ErrorBody,
   },
 };
 
@@ -50,6 +51,7 @@ const RecordWatchSchema = {
     200: Type.Object({ entry: WatchEntrySchema }),
     400: ErrorBody,
     401: Type.Object({ error: Type.String() }),
+    500: ErrorBody,
   },
 };
 
@@ -133,7 +135,7 @@ const watchRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         const now       = new Date();
         const thumbnail = body.thumbnail ?? "";
-        let entry: Awaited<ReturnType<typeof WatchHistory.findOneAndUpdate>>;
+        let entry: IWatchEntry | null = null;
 
         const baseSet = {
           title:     body.title,
@@ -158,7 +160,7 @@ const watchRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
               },
             },
             { new: true },
-          );
+          ).lean() as IWatchEntry | null;
 
           // Episode not yet in array (or document doesn't exist) — push it
           if (!entry) {
@@ -169,7 +171,7 @@ const watchRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
                 $push: { episodes: { season: body.season, episode: body.episode, watchedAt: now } },
               },
               { upsert: true, new: true },
-            );
+            ).lean() as IWatchEntry;
           }
         } else {
           // Movie — just upsert the document, no episode tracking
@@ -177,10 +179,10 @@ const watchRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             { userId: user._id, movieId: body.movieId },
             { $set: baseSet },
             { upsert: true, new: true },
-          );
+          ).lean() as IWatchEntry;
         }
 
-        return reply.code(200).send({ entry: serializeEntry(entry!.toObject()) });
+        return reply.code(200).send({ entry: serializeEntry(entry!) });
       } catch (err) {
         fastify.log.error(err, "watch POST error");
         return reply.code(500).send({ error: "Failed to record watch history" });
