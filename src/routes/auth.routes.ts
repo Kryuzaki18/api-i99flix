@@ -14,6 +14,7 @@ import {
   VERIFICATION_TOKEN_TTL_MS,
   TOKEN_EXPIRY_REMEMBER,
   TOKEN_EXPIRY_SESSION,
+  SEVEN_DAYS_SECONDS,
 } from "../constants/auth.constant.js";
 import User from "../schemas/users.schema.js";
 import { createEmailService } from "../services/email.service.js";
@@ -72,7 +73,7 @@ const MeSchema = {
 const SigninSchema = {
   description:
     "Verifies user credentials by fetching account details and issues a secure httpOnly session cookie. " +
-    "When rememberMe is true the cookie persists for 7 days; otherwise it is a session cookie.",
+    "When rememberMe is true the cookie persists for 30 days; otherwise it persists for 7 days.",
   tags: ["Authentication"],
   body: Type.Object({
     email: Type.String({
@@ -346,7 +347,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         const options = rememberMe
           ? cookieOptions(THIRTY_DAYS_SECONDS)
-          : cookieOptions();
+          : cookieOptions(SEVEN_DAYS_SECONDS);
 
         User.findByIdAndUpdate(user._id, { lastLoginAt: new Date() }).catch(
           (err: Error) => request.log.error({ err }, "Failed to update lastLoginAt"),
@@ -437,7 +438,7 @@ const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
       const options = rememberMe
         ? cookieOptions(THIRTY_DAYS_SECONDS)
-        : cookieOptions();
+        : cookieOptions(SEVEN_DAYS_SECONDS);
 
       reply.setCookie(COOKIE_NAME, token, options);
       return reply.code(200).send({ message: "Signed in successfully" });
