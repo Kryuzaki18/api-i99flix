@@ -2,6 +2,7 @@ import { type FastifyInstance, type FastifyPluginAsync } from "fastify";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { ROUTES } from "../config/app-routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
@@ -39,8 +40,7 @@ const TEMPLATES_MAP: Record<string, string> = {
 };
 
 const devRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
-  fastify.get<{ Params: { template: string } }>(
-    "/dev/email-preview/:template",
+  fastify.get<{ Params: { template: string } }>(ROUTES.DEV_EMAIL_TEMPLATE,
     async (request, reply) => {
       const { template } = request.params;
       const filename = TEMPLATES_MAP[template];

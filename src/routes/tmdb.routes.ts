@@ -493,6 +493,10 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       if (!firstAirDate || firstAirDate > todayIso()) {
         return reply.code(404).send({ error: "TV series not found" });
       }
+      const seasons = data["seasons"] as { episode_count: number }[] | undefined;
+      if (Array.isArray(seasons)) {
+        data["seasons"] = seasons.filter((s) => s.episode_count > 0);
+      }
       return reply.send(data);
     } catch (e) { return handleTmdbError(e, reply); }
   });

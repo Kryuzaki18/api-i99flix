@@ -1,5 +1,7 @@
 export const ROUTES = {
   HEALTH: "/health",
+  
+  DEV_EMAIL_TEMPLATE: "/dev/email-preview/:template",
 
   SIGNUP:          "/signup",
   SIGNIN:          "/signin",
@@ -14,6 +16,8 @@ export const ROUTES = {
   
   WATCHLIST:          "/watchlist",
   WATCHLIST_ITEM:     "/watchlist/:movieId",
+
+  WATCH: "/watch",
 
   MOVIES:      "/movies",       
   MOVIE_BY_ID: "/movies/:id",  
