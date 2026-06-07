@@ -52,5 +52,6 @@ export const ROUTES = {
   TMDB_GENRES_MOVIE:           "/tmdb/genres/movie",
   TMDB_GENRES_TV:              "/tmdb/genres/tv",
 
-  TMDB_SHOWCASE:               "/tmdb/showcase"
+  TMDB_SHOWCASE:               "/tmdb/showcase",
+  TMDB_SHOWCASE_TRAILER:       "/tmdb/showcase/trailer/:id"
 };

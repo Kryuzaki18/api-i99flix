@@ -124,12 +124,27 @@ const tmdbRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       }),
       response: { 200: Type.Any(), 502: ErrorBody },
     },
-    config: { rateLimit: { max: 60, timeWindow: "1 minute" } },
-
+    config:     { rateLimit: tmdbRateLimit },
   }, async (request, reply) => {
     try {
       const data = await tmdb.movies.trending(request.query as Record<string, unknown>) as TmdbListResponse;
       return reply.send(filterFutureMovies(data));
+    } catch (e) { return handleTmdbError(e, reply); }
+  });
+
+  fastify.get(ROUTES.TMDB_SHOWCASE_TRAILER, {
+    schema: {
+      description: "Public endpoint — returns trailer videos for a showcase movie. No authentication required.",
+      tags: ["TMDB — Public"],
+      params: IdParam,
+      response: { 200: Type.Any(), 404: ErrorBody, 502: ErrorBody },
+    },
+    config:     { rateLimit: tmdbRateLimit },
+  }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: number };
+      const data = await tmdb.movies.videos(id);
+      return reply.send(data);
     } catch (e) { return handleTmdbError(e, reply); }
   });
 
